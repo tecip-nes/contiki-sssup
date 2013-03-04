@@ -1,3 +1,5 @@
+notifications:
+  email: false
 language: c #NOTE: this will set CC=gcc which might cause trouble
 before_script:
   - "sudo apt-get -qq update"
@@ -25,10 +27,11 @@ script:
   - "make -C regression-tests/??-$BUILD_TYPE RUNALL=true summary"
 
 after_script:
-  ## Print a basic summary in unix style
+  ## Print a basic summary 
   - "echo 'Summary:'; cat regression-tests/??-$BUILD_TYPE/summary"
+  - "FAILS=`grep -c -i 'fail' regression-tests/??-$BUILD_TYPE/summary`"
   ## This will detect whether the build should pass or fail
-  - "test `grep -c -i 'fail' regression-tests/??-$BUILD_TYPE/summary` -eq 0"
+  - "test $FAILS -eq 0; exit $?"
 
 
 env:
