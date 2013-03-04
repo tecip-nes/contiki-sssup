@@ -1,6 +1,6 @@
 all: remotepowerswitch
 
-CONTIKI=../../../../
+CONTIKI=../../../
 CFLAGS += -DPROJECT_CONF_H=\"project-conf.h\"
 
 # variable for root Makefile.include
