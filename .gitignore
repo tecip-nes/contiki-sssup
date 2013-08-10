@@ -63,7 +63,8 @@ contiki-cc2530dk.lib
 *.banks
 *.sensinode
 *.cc2530dk
-
+cscope*
+update_cscope.sh
 # VC++ build artifacts
 *.exp
 *.ilk
@@ -71,7 +72,6 @@ contiki-cc2530dk.lib
 *.pdb
 *.prg
 *.dsc
-
 #cc65 build artifacts
 *.S
 *.eth
@@ -81,6 +81,12 @@ contiki-cc2530dk.lib
 *.d64
 *.d71
 *.d81
+!*Makefile*
 
 #regression tests artifacts
 *.testlog
+
+# pymite artifacts
+pmfeatures.h
+pmstdlib_img.c
+pmstdlib_nat.c
