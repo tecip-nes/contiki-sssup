@@ -237,7 +237,8 @@ coap_receive(void)
           coap_remove_observer_by_mid(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport, message->mid);
         }
 
-        if ( (transaction = coap_get_transaction_by_mid(message->mid)) )
+        transaction = coap_get_transaction_by_mid(message->mid);
+        if (message->type != COAP_TYPE_CON && transaction)
         {
           /* Free transaction memory before callback, as it may create a new transaction. */
           restful_response_handler callback = transaction->callback;
@@ -249,6 +250,13 @@ coap_receive(void)
             callback(callback_data, message);
           }
         } /* if (ACKed transaction) */
+        /* Observe notification */
+        if ((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
+              && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
+          PRINTF("Observe [%u]\n", message->observe);
+          coap_handle_notification(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+              message);
+        }
         transaction = NULL;
 
       } /* Request or Response */

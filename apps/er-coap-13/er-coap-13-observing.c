@@ -253,3 +253,10 @@ coap_observe_handler(resource_t *resource, void *request, void *response)
     } /* if (observe) */
   }
 }
+
+/*----------------------------------------------------------------------------*/
+list_t
+coap_get_observers(void)
+{
+  return observers_list;
+}

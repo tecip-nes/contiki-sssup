@@ -83,6 +83,7 @@ coap_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
   {
     t->mid = mid;
     t->retrans_counter = 0;
+    t->callback = NULL;
 
     /* save client address */
     uip_ipaddr_copy(&t->addr, addr);

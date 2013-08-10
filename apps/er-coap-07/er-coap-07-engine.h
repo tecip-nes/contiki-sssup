@@ -47,6 +47,7 @@
 #include "er-coap-07-transactions.h"
 #include "er-coap-07-observing.h"
 #include "er-coap-07-separate.h"
+#include "er-coap-07-observing-client.h"
 
 #include "pt.h"
 
