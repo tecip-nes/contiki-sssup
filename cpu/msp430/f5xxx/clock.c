@@ -36,6 +36,7 @@
 #include "rtimer-arch.h"
 #include "dev/watchdog.h"
 #include "isr_compat.h"
+#include "stack-overflow-watcher.h"
 
 #define INTERVAL (RTIMER_ARCH_SECOND / CLOCK_SECOND)
 
@@ -58,6 +59,8 @@ ISR(TIMER1_A1, timera1)
     /* HW timer bug fix: Interrupt handler called before TR==CCR.
      * Occurs when timer state is toggled between STOP and CONT. */
     while(TA1CTL & MC1 && TA1CCR1 - TA1R == 1);
+
+    msp430_stack_overflow_watcher_check();
 
     /* Make sure interrupt time is future */
     do {
@@ -134,6 +137,8 @@ clock_fine(void)
 void
 clock_init(void)
 {
+  msp430_stack_overflow_watcher_init();
+
   dint();
 
   /* Select SMCLK (2.4576MHz), clear TAR */
