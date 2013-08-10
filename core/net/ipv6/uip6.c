@@ -1183,6 +1183,9 @@ uip_process(uint8_t flag)
 
   /* TBD Some Parameter problem messages */
   if(!uip_ds6_is_my_addr(&UIP_IP_BUF->destipaddr) &&
+#if UIP_CONF_LOOPBACK
+     !uip_is_addr_loopback(&UIP_IP_BUF->destipaddr) &&
+#endif /* UIP_CONF_LOOPBACK */
      !uip_ds6_is_my_maddr(&UIP_IP_BUF->destipaddr)) {
     if(!uip_is_addr_mcast(&UIP_IP_BUF->destipaddr) &&
        !uip_is_addr_link_local(&UIP_IP_BUF->destipaddr) &&
