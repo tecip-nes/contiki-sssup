@@ -702,6 +702,12 @@ uip_ds6_select_src(uip_ipaddr_t *src, uip_ipaddr_t *dst)
   } else {
     uip_ipaddr_copy(src, &matchaddr->ipaddr);
   }
+#if UIP_CONF_LOOPBACK
+  // FIXME: there's probably a better way to do this
+  if(uip_is_addr_loopback(dst)) {
+    uip_ipaddr_copy(src, dst);
+  }
+#endif /* UIP_CONF_LOOPBACK */
 }
 
 /*---------------------------------------------------------------------------*/
