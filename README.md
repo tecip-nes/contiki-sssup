@@ -19,3 +19,11 @@ reconfigurable in-network processing in IoT-based WSNs]
 (http://retis.sssup.it/~daniele/t-res.pdf)”, in Proceedings of the 9th IEEE
 International Conference on Distributed Computing in Sensor Systems (DCoSS'13)
 and Workshops, Cambridge, MA, May 2013.
+
+================================================================================
+
+#### Acknowledgments
+
+T-Res uses [PyMite](https://code.google.com/p/python-on-a-chip/) for 
+interpreting Python bytecode. PyMite is a reduced Python virtual machine for
+constrained devices developed by Dean Hall.
