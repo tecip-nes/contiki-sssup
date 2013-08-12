@@ -824,6 +824,7 @@ pf_handler(void *request, void *response, uint8_t *buffer,
     break;
   case METHOD_DELETE:
     if(task->pf_img) {
+      tres_stop_monitoring(task);
       tres_mem_pf_clear(task->pf_img);
       task_reset_state(task);
       task->pf_img = NULL;
