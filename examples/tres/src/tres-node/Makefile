@@ -4,7 +4,7 @@ endif
 
 WITH_COAP=13
 
-CONTIKI=../../..
+CONTIKI=../../../..
 APPS = tres pymite
 CONTIKI_PROJECT = tres-test
 # additional files to be deleted when make clean is invoked
