@@ -17,16 +17,20 @@
 *.esb
 *.avr-raven
 *.exp5438
-*.mb851
+*.mbxxx
 *.win32
 *.apple2enh
 *.atari
 *.c128
 *.c64
+*.cc2538dk
 *.report
 summary
 *.summary
 *.faillog
+*.orig
+*~
+.DS_Store
 obj_*
 symbols.*
 Makefile.target
@@ -59,7 +63,8 @@ contiki-cc2530dk.lib
 *.banks
 *.sensinode
 *.cc2530dk
-
+cscope*
+update_cscope.sh
 # VC++ build artifacts
 *.exp
 *.ilk
@@ -67,7 +72,6 @@ contiki-cc2530dk.lib
 *.pdb
 *.prg
 *.dsc
-
 #cc65 build artifacts
 *.S
 *.eth
@@ -77,3 +81,12 @@ contiki-cc2530dk.lib
 *.d64
 *.d71
 *.d81
+!*Makefile*
+
+#regression tests artifacts
+*.testlog
+
+# pymite artifacts
+pmfeatures.h
+pmstdlib_img.c
+pmstdlib_nat.c

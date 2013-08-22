@@ -72,6 +72,14 @@ extern struct uip_fallback_interface UIP_FALLBACK_INTERFACE;
 #include "rpl/rpl.h"
 #endif
 
+#if UIP_CONF_IPV6 && UIP_CONF_LOOPBACK
+/* uip_llen temporarily stores uip_len of the loopback message waiting to be
+ * processed as input */
+static uint16_t uip_llen; // uip loopback len
+static uint8_t uip_loopback_buf[UIP_BUFSIZE - UIP_LLH_LEN];
+static void handle_loopback_packet();
+#endif /* UIP_CONF_IPV6 && UIP_CONF_LOOPBACK */
+
 process_event_t tcpip_event;
 #if UIP_CONF_ICMP6
 process_event_t tcpip_icmp6_event;
@@ -103,7 +111,8 @@ static struct internal_state {
 enum {
   TCP_POLL,
   UDP_POLL,
-  PACKET_INPUT
+  PACKET_INPUT,
+  LOOPBACK_INPUT
 };
 
 /* Called on IP packet output. */
@@ -166,6 +175,7 @@ start_periodic_tcp_timer(void)
 static void
 check_for_tcp_syn(void)
 {
+#if UIP_TCP || UIP_CONF_IP_FORWARD
   /* This is a hack that is needed to start the periodic TCP timer if
      an incoming packet contains a SYN: since uIP does not inform the
      application if a SYN arrives, we have no other way of starting
@@ -176,6 +186,7 @@ check_for_tcp_syn(void)
      (UIP_TCP_BUF->flags & TCP_SYN) == TCP_SYN) {
     start_periodic_tcp_timer();
   }
+#endif /* UIP_TCP || UIP_CONF_IP_FORWARD */
 }
 /*---------------------------------------------------------------------------*/
 static void
@@ -520,6 +531,14 @@ eventhandler(process_event_t ev, process_data_t data)
     case PACKET_INPUT:
       packet_input();
       break;
+#if UIP_CONF_IPV6 && UIP_CONF_LOOPBACK
+    case LOOPBACK_INPUT:
+      uip_len = uip_llen;
+      memcpy(UIP_IP_BUF, uip_loopback_buf, uip_len);
+      uip_llen = 0;
+      packet_input();
+      break;
+#endif /* UIP_CONF_IPV6 && UIP_CONF_LOOPBACK */
   };
 }
 /*---------------------------------------------------------------------------*/
@@ -543,6 +562,16 @@ tcpip_ipv6_output(void)
   if(uip_len == 0) {
     return;
   }
+
+#if UIP_CONF_LOOPBACK
+  /* Handle loopback messages */
+  if (uip_ds6_is_my_addr(&UIP_IP_BUF->destipaddr) ||
+      uip_is_addr_loopback(&UIP_IP_BUF->destipaddr)) {
+    UIP_LOG("tcpip_ipv6_output: loopback message");
+    handle_loopback_packet();
+    return;
+  }
+#endif /* UIP_CONF_LOOPBACK */
 
   if(uip_len > UIP_LINK_MTU) {
     UIP_LOG("tcpip_ipv6_output: Packet to big");
@@ -600,6 +629,7 @@ tcpip_ipv6_output(void)
     }
 #endif /* UIP_CONF_IPV6_RPL */
     if((nbr = uip_ds6_nbr_lookup(nexthop)) == NULL) {
+#if UIP_ND6_SEND_NA
       if((nbr = uip_ds6_nbr_add(nexthop, NULL, 0, NBR_INCOMPLETE)) == NULL) {
         uip_len = 0;
         return;
@@ -626,7 +656,9 @@ tcpip_ipv6_output(void)
         stimer_set(&nbr->sendns, uip_ds6_if.retrans_timer / 1000);
         nbr->nscount = 1;
       }
+#endif /* UIP_ND6_SEND_NA */
     } else {
+#if UIP_ND6_SEND_NA
       if(nbr->state == NBR_INCOMPLETE) {
         PRINTF("tcpip_ipv6_output: nbr cache entry incomplete\n");
 #if UIP_CONF_IPV6_QUEUE_PKT
@@ -648,6 +680,7 @@ tcpip_ipv6_output(void)
         nbr->nscount = 0;
         PRINTF("tcpip_ipv6_output: nbr cache entry stale moving to delay\n");
       }
+#endif /* UIP_ND6_SEND_NA */
 
       tcpip_output(&nbr->lladdr);
 
@@ -776,4 +809,15 @@ PROCESS_THREAD(tcpip_process, ev, data)
   
   PROCESS_END();
 }
+
 /*---------------------------------------------------------------------------*/
+#if UIP_CONF_IPV6 && UIP_CONF_LOOPBACK
+void static
+handle_loopback_packet() {
+  uip_llen = uip_len;
+  memcpy(uip_loopback_buf, UIP_IP_BUF, uip_llen);
+  uip_len = 0;
+  uip_ext_len = 0;
+  process_post(&tcpip_process, LOOPBACK_INPUT, NULL);
+}
+#endif /* UIP_CONF_IPV6 && UIP_CONF_LOOPBACK */
