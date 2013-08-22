@@ -12,7 +12,7 @@ be observed by another node or the user. T-Res tasks can be used to implement
 simple event-detection and control applications.
 
 More information about T-Res can be found in the
-[wiki](https://github.com/alessandrelli/contiki-tres/wiki) and in the following
+[wiki](https://github.com/tecip-nes/contiki-tres/wiki) and in the following
 paper:
 > D. Alessandrelli, M. Petracca, and P. Pagano, “[T-Res: enabling 
 reconfigurable in-network processing in IoT-based WSNs]
