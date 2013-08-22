@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -252,4 +252,11 @@ coap_observe_handler(resource_t *resource, void *request, void *response)
       coap_remove_observer_by_url(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport, resource->url);
     } /* if (observe) */
   }
+}
+
+/*----------------------------------------------------------------------------*/
+list_t
+coap_get_observers(void)
+{
+  return observers_list;
 }

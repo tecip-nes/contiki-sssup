@@ -1,19 +1,29 @@
-The Contiki Operating System
+Contiki with T-Res
 ============================
 
-[![Build Status](https://secure.travis-ci.org/contiki-os/contiki.png)](http://travis-ci.org/contiki-os/contiki)
+This fork of Contiki adds T-Res, a programming abstraction framework for
+IoT-based WSNs. T-Res allows you to create simple "tasks", called T-Res tasks,
+that can be installed in your IoT-based WSN at run-time.
 
-Contiki is an open source operating system that runs on tiny low-power
-microcontrollers and makes it possible to develop applications that
-make efficient use of the hardware while providing standardized
-low-power wireless communication for a range of hardware platforms.
+A T-Res task is written in Python and allows a node to monitor one or more
+sensors, process their data, and send the produced output to an actuator.
+Alternatively, the produced output can be stored in a local resource that can
+be observed by another node or the user. T-Res tasks can be used to implement
+simple event-detection and control applications.
 
-Contiki is used in numerous commercial and non-commercial systems,
-such as city sound monitoring, street lights, networked electrical
-power meters, industrial monitoring, radiation monitoring,
-construction site monitoring, alarm systems, remote house monitoring,
-and so on.
+More information about T-Res can be found in the
+[wiki](https://github.com/alessandrelli/contiki-tres/wiki) and in the following
+paper:
+> D. Alessandrelli, M. Petracca, and P. Pagano, “[T-Res: enabling 
+reconfigurable in-network processing in IoT-based WSNs]
+(http://retis.sssup.it/~daniele/t-res.pdf)”, in Proceedings of the 9th IEEE
+International Conference on Distributed Computing in Sensor Systems (DCoSS'13)
+and Workshops, Cambridge, MA, May 2013.
 
-For more information, see the Contiki website:
+================================================================================
 
-[http://contiki-os.org](http://contiki-os.org)
+#### Acknowledgments
+
+T-Res uses [PyMite](https://code.google.com/p/python-on-a-chip/) for 
+interpreting Python bytecode. PyMite is a reduced Python virtual machine for
+constrained devices developed by Dean Hall.

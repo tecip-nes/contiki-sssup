@@ -44,7 +44,7 @@
 
 #include "er-coap-07-engine.h"
 
-#define DEBUG 0 
+#define DEBUG 0
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINT6ADDR(addr) PRINTF("[%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x]", ((uint8_t *)addr)[0], ((uint8_t *)addr)[1], ((uint8_t *)addr)[2], ((uint8_t *)addr)[3], ((uint8_t *)addr)[4], ((uint8_t *)addr)[5], ((uint8_t *)addr)[6], ((uint8_t *)addr)[7], ((uint8_t *)addr)[8], ((uint8_t *)addr)[9], ((uint8_t *)addr)[10], ((uint8_t *)addr)[11], ((uint8_t *)addr)[12], ((uint8_t *)addr)[13], ((uint8_t *)addr)[14], ((uint8_t *)addr)[15])
@@ -233,7 +233,8 @@ coap_receive(void)
           coap_remove_observer_by_mid(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport, message->mid);
         }
 
-        if ( (transaction = coap_get_transaction_by_mid(message->mid)) )
+        transaction = coap_get_transaction_by_mid(message->mid);
+        if (message->type != COAP_TYPE_CON && transaction)
         {
           /* Free transaction memory before callback, as it may create a new transaction. */
           restful_response_handler callback = transaction->callback;
@@ -245,6 +246,13 @@ coap_receive(void)
             callback(callback_data, message);
           }
         } /* if (ACKed transaction) */
+        /* Observe notification */
+        if ((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON) \
+            && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
+          PRINTF("Observe [%u]\n", message->observe);
+          coap_handle_notification(&UIP_IP_BUF->srcipaddr,                     \
+                                   UIP_UDP_BUF->srcport, message);
+        }
         transaction = NULL;
 
       } /* Request or Response */

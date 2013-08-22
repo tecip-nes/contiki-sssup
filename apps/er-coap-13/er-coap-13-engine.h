@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Institute for Pervasive Computing, ETH Zurich
+ * Copyright (c) 2013, Institute for Pervasive Computing, ETH Zurich
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,7 @@
 #include "er-coap-13-transactions.h"
 #include "er-coap-13-observing.h"
 #include "er-coap-13-separate.h"
+#include "er-coap-13-observing-client.h"
 
 #include "pt.h"
 

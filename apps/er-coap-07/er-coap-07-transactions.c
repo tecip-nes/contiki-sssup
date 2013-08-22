@@ -83,7 +83,7 @@ coap_new_transaction(uint16_t mid, uip_ipaddr_t *addr, uint16_t port)
   {
     t->mid = mid;
     t->retrans_counter = 0;
-
+    t->callback = NULL;
     /* save client address */
     uip_ipaddr_copy(&t->addr, addr);
     t->port = port;
@@ -149,6 +149,9 @@ coap_send_transaction(coap_transaction_t *t)
   }
   else
   {
+    // FIXME: [Daniele] If we send a NON transaction we won't be able to handle
+    // the response. This is because the transction is cleared and therefore the
+    // callback won't be called.
     coap_clear_transaction(t);
   }
 }
