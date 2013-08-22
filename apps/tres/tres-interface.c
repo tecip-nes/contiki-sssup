@@ -239,6 +239,10 @@ tres_del_task(tres_res_t *task)
     }
   }
   task_is_delete_all(task);
+  if(task->pf_img) {
+    tres_mem_pf_clear(task->pf_img);
+  }
+  task_reset_state(task);
   memb_free(&tasks_mem, task);
 }
 
