@@ -37,7 +37,7 @@
 
 /* Multiplies with chunk size, be aware of memory constraints. */
 #ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS   5
+#define COAP_MAX_OPEN_TRANSACTIONS   4
 #endif
 
 /* Must be <= open transaction number. */
