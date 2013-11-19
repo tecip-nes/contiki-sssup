@@ -75,7 +75,7 @@ ifeq ($(TARGET), seedeye)
 MV_COMMAND = mv $(CONTIKI_PROJECT).$(TARGET) $(CONTIKI_PROJECT).elf
 endif
 
-all: $(CONTIKI_PROJECT)
+all: pmfeatures.h $(CONTIKI_PROJECT)
 	$(MV_COMMAND)
 #mv $(CONTIKI_PROJECT).$(TARGET) $(CONTIKI_PROJECT).elf
 
