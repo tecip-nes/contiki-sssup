@@ -230,9 +230,12 @@ tres_pm_get_state(pPmFrame_t *ppframe)
 {
   PmReturn_t retv = PM_RET_OK;
   pPmObj_t pobj;
+  pPmObj_t pobj_new;
   pPmInstance_t pcli;
   pPmDict_t pdict;
   int16_t index;
+  float fval;
+  int32_t ival;
 
   if(NATIVE_GET_NUM_ARGS() != 1) {
     PM_RAISE(retv, PM_RET_EX_TYPE);
@@ -255,12 +258,20 @@ tres_pm_get_state(pPmFrame_t *ppframe)
       switch (OBJ_GET_TYPE(pobj)) {
       case OBJ_TYPE_INT:
         //pop int
-        pop_int(&((pPmInt_t) pobj)->val);
+        pop_int(&ival);
+        retv = int_new(ival, &pobj_new);
         break;
       case OBJ_TYPE_FLT:
         //pop float
-        pop_float(&((pPmFloat_t) pobj)->val);
+        pop_float(&fval);
+        retv = float_new(fval, &pobj_new);
         break;
+      default:
+        /* Raise TypeError */
+        PM_RAISE(retv, PM_RET_EX_TYPE);
+      }
+      if (retv == PM_RET_OK) {
+        seglist_setItem(pdict->d_vals, pobj_new, index);
       }
     }
   }

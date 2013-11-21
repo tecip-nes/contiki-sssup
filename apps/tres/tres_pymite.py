@@ -28,7 +28,7 @@ def getFloatInput():
   """
 
 def _getState(cli):
-   """__NATIVE__
+  """__NATIVE__
   return tres_pm_get_state(ppframe); 
   """
 
@@ -45,7 +45,7 @@ def pop(def_val):
   return tres_pm_state_pop(ppframe); 
   """
 
-def push():
+def push(val):
   """__NATIVE__
   return tres_pm_state_push(ppframe); 
   """
