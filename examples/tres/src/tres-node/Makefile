@@ -1,6 +1,7 @@
 ifndef TARGET
   TARGET = wismote
 endif
+include Makefile.seedeye
 
 WITH_COAP=13
 
