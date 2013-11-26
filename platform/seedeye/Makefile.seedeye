@@ -56,7 +56,7 @@ CONTIKI_PLAT_DEFS += -D MRF24J40MB -D ADD_RSSI_AND_LQI_TO_PACKET
 
 CONTIKI_CORE_SOURCEFILES = leds.c sensors.c slip.c
 
-CONTIKI_TARGET_SOURCEFILES += contiki-seedeye-main.c init-net.c leds-arch.c battery-sensor.c button-sensor.c radio-sensor.c
+CONTIKI_TARGET_SOURCEFILES += contiki-seedeye-main.c init-net.c leds-arch.c battery-sensor.c button-sensor.c radio-sensor.c node-id.c
 CONTIKI_TARGET_SOURCEFILES += mrf24j40.c
 CONTIKI_TARGET_SOURCEFILES += $(CONTIKI_CORE_SOURCEFILES)
 
