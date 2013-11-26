@@ -972,7 +972,7 @@ parse_tag(char *tag, const char *buf, uint16_t max_len)
     return NULL;
   }
   len = ptr_e - buf;
-  snprintf(tag, max_len, "%.*s", len, buf);
+  snprintf(tag, max_len, "%.*s", (int)len, buf);
 
   return ptr_e + 1;
 }
