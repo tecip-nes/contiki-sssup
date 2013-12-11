@@ -125,7 +125,7 @@ static inline void is_handler_post(void *request, void *response,
                                    uint8_t *buffer, uint16_t preferred_size,
                                    int32_t *offset, tres_res_t *task);
 
-static size_t create_coap_url(char *url, uint16_t max_len, uip_ipaddr_t *addr,
+static int16_t create_coap_url(char *url, int16_t max_len, uip_ipaddr_t *addr,
                               char *path);
 
 static char *parse_tag(char *tag, const char *buf, uint16_t max_len);
@@ -153,7 +153,7 @@ void pf_handler(void *request, void *response, uint8_t *buffer,
 void lo_handler(void *request, void *response, uint8_t *buffer,
                 uint16_t preferred_size, int32_t *offset, tres_res_t *task);
 
-static inline size_t create_coap_base_url(char *url, uint16_t max_len,
+static inline int16_t create_coap_base_url(char *url, int16_t max_len,
                                           uip_ipaddr_t *addr);
 
 static void task_reset_state(tres_res_t *task);
@@ -325,9 +325,9 @@ task_od_reset(tres_res_t *task)
 
 /*----------------------------------------------------------------------------*/
 static int
-parse_tasks_path(const char *path, size_t len, char *name, char *subres)
+parse_tasks_path(const char *path, uint16_t len, char *name, char *subres)
 {
-  size_t pi;
+  uint16_t pi;
 
   name[0] = '\0';
   subres[0] = '\0';
@@ -393,8 +393,8 @@ tasks_handler(void *request, void *response, uint8_t *buffer,
   uint32_t b1_offset = 0;
   int i;
   tres_res_t *task;
-  size_t strpos = 0;
-  size_t bufpos = 0;
+  int32_t strpos = 0;
+  int16_t bufpos = 0;
 
   if(coap_get_header_block1(request, &num, &more, &size, &b1_offset)
      && more == 0) {
@@ -451,8 +451,8 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
 {
   rest_resource_flags_t method;
   tres_res_t *task;
-  size_t strpos;
-  size_t bufpos;
+  int32_t strpos;
+  int16_t bufpos;
 
   PRINTF("task_name_handler()\n");
   method = REST.get_method_type(request);
@@ -602,8 +602,8 @@ is_handler_get(void *request, void *response, uint8_t *buffer,
 {
   tres_is_t *is;
   char base_url[BASE_URL_LEN];
-  size_t strpos;
-  size_t bufpos;
+  int32_t strpos;
+  int16_t bufpos;
 
   PRINTF("is_handler_get()\n");
   strpos = 0;
@@ -644,7 +644,7 @@ is_handler_post(void *request, void *response, uint8_t *buffer,
   int retv;
 
   REST.get_request_payload(request, (const uint8_t **)&ptr);
-  PRINTF("Req str len = %d\n", strlen(ptr));
+  PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
   retv = task_is_add(task, ptr);
   if(retv == ERR_NONE) {
     REST.set_response_status(response, REST.status.CHANGED);
@@ -670,7 +670,7 @@ is_handler_put(void *request, void *response, uint8_t *buffer,
   int retv;
 
   len = REST.get_request_payload(request, (const uint8_t **)&ptr);
-  PRINTF("Req str len = %d\n", strlen(ptr));
+  PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
   PRINTF("Req len = %d\n", len);
   task_is_delete_all(task);
   if(len != 0) {
@@ -705,7 +705,7 @@ od_handler(void *request, void *response, uint8_t *buffer,
   rest_resource_flags_t method;
   const char *ptr;
   int retv;
-  size_t pos;
+  int16_t pos;
 
   method = REST.get_method_type(request);
   switch (method) {
@@ -726,7 +726,7 @@ od_handler(void *request, void *response, uint8_t *buffer,
     break;
   case METHOD_PUT:
     len = REST.get_request_payload(request, (const uint8_t **)&ptr);
-    PRINTF("Req str len = %d\n", strlen(ptr));
+    PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
     PRINTF("Req len = %d\n", len);
     retv = task_od_set(task, ptr);
     if(retv == ERR_NONE) {
@@ -900,11 +900,11 @@ typedef enum {
   ZG_ALREADY_DONE
 } zerogrouping_t;
 
-static size_t
-create_coap_base_url(char *url, uint16_t max_len, uip_ipaddr_t *addr)
+static int16_t
+create_coap_base_url(char *url, int16_t max_len, uip_ipaddr_t *addr)
 {
-  size_t pos;
-  size_t len;
+  int16_t pos;
+  int16_t len;
   int i;
   zerogrouping_t zg;
 
@@ -935,11 +935,11 @@ create_coap_base_url(char *url, uint16_t max_len, uip_ipaddr_t *addr)
 
 
 /*----------------------------------------------------------------------------*/
-static size_t
-create_coap_url(char *url, uint16_t max_len, uip_ipaddr_t *addr, char *path)
+static int16_t
+create_coap_url(char *url, int16_t max_len, uip_ipaddr_t *addr, char *path)
 {
-  size_t pos;
-  size_t len;
+  int16_t pos;
+  int16_t len;
 
   pos = create_coap_base_url(url, max_len, addr);
   len = (max_len - pos > 0) ? max_len - pos : 0;
@@ -953,7 +953,7 @@ static char *
 parse_tag(char *tag, const char *buf, uint16_t max_len)
 {
   char *ptr_e;
-  size_t len;
+  uint16_t len;
 
   PRINTF("parse_tag()\n");
   *tag = '\0';
