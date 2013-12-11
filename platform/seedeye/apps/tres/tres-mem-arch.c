@@ -93,7 +93,7 @@ tres_mem_arch_init(void)
 
   DBG_PRINTF("tres_mem_arch_init()\n");
   for(i = 0; i < NUM_SLOT; i++) {
-    used[i] = 1;
+    used[i] = 0;
   }
 }
 
