@@ -38,6 +38,7 @@
 
 
 #include <string.h>
+#include <inttypes.h>
 
 #include "contiki.h"
 #include "erbium.h"
@@ -775,8 +776,8 @@ pf_handler(void *request, void *response, uint8_t *buffer,
       coap_set_header_block1(response, num, more, size);
     }
 
-    PRINTF("Request on /pf: num = %lu, more = %u, size = %u, offset = %lu\n",
-           num, more, size, b1_offset);
+    PRINTF("Request on /pf: num = %"PRIu32", more = %"PRIu8", size = %"PRIu16
+        ", offset = %"PRIu32"\n", num, more, size, b1_offset);
     // if it's the first packet, stop input resource monitoring
     if(b1_offset == 0) {
       tres_stop_monitoring(task);
