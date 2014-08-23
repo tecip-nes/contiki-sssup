@@ -714,6 +714,16 @@ coap_set_status_code(void *packet, unsigned int code)
   }
 }
 /*---------------------------------------------------------------------------*/
+size_t
+coap_get_token(void *packet, const uint8_t **token)
+{
+  coap_packet_t *const coap_pkt = (coap_packet_t *)packet;
+
+  *token = coap_pkt->token;
+
+  return coap_pkt->token_len;
+}
+/*---------------------------------------------------------------------------*/
 int
 coap_set_token(void *packet, const uint8_t *token, size_t token_len)
 {

@@ -200,6 +200,16 @@ int coap_get_post_variable(void *packet, const char *name,
 
 int coap_set_status_code(void *packet, unsigned int code);
 
+/**
+ * \brief Get packet's token
+ *
+ * Make the passed pointer point to the packet's token and return the token len
+ * \param packet  The packet
+ * \param token   Output parameter that will be set to point to the token
+ * \return        The token len
+ * \warning The output parameter (token) is valid until packet is valid
+ */
+size_t coap_get_token(void *packet, const uint8_t **token);
 int coap_set_token(void *packet, const uint8_t *token, size_t token_len);
 
 int coap_get_header_content_format(void *packet, unsigned int *format);
