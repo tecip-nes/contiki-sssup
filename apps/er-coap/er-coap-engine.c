@@ -253,6 +253,14 @@ coap_receive(void)
         }
         /* if(ACKed transaction) */
         transaction = NULL;
+
+	/* if observe notification */
+        if ((message->type == COAP_TYPE_CON || message->type == COAP_TYPE_NON)
+              && IS_OPTION(message, COAP_OPTION_OBSERVE)) {
+          PRINTF("Observe [%u]\n", message->observe);
+          coap_handle_notification(&UIP_IP_BUF->srcipaddr, UIP_UDP_BUF->srcport,
+              message);
+        }
       } /* request or response */
     } /* parsed correctly */
 
