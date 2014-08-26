@@ -42,7 +42,7 @@
 #include <inttypes.h>
 
 #include "contiki.h"
-#include "erbium.h"
+#include "er-coap.h"
 
 #include "tres-pymite.h"
 #include "tres.h"

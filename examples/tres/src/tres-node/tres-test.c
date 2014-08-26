@@ -39,7 +39,7 @@
 
 #include "contiki.h"
 #include "node-id.h"
-#include "erbium.h"
+#include "er-coap.h"
 #include "tres.h"
 #include "pm.h"
 
@@ -77,9 +77,17 @@ static uint16_t sensor_value = 0;
 /*----------------------------------------------------------------------------*/
 /*                            Fake sensor resource                            */
 /*----------------------------------------------------------------------------*/
-PERIODIC_RESOURCE(sensor, METHOD_GET, "sensor",
-                  "title=\"Fake generic sensor\";obs",
-                  TRES_EXAMPLE_SENSOR_PERIOD * CLOCK_SECOND);
+void sensor_periodic_handler(void);
+void sensor_handler(void *request, void *response, uint8_t *buffer,
+               uint16_t preferred_size, int32_t *offset);
+
+PERIODIC_RESOURCE(sensor, "title=\"Fake generic sensor\";obs",
+                 sensor_handler,
+                 NULL,
+                 NULL,
+                 NULL,
+                 TRES_EXAMPLE_SENSOR_PERIOD * CLOCK_SECOND, 
+                 sensor_periodic_handler);
 
 /*----------------------------------------------------------------------------*/
 void
@@ -120,7 +128,8 @@ new_sensor_value()
 
 /*----------------------------------------------------------------------------*/
 void
-sensor_periodic_handler(resource_t *r)
+//sensor_periodic_handler(resource_t *r)
+sensor_periodic_handler(void)
 {
   // we always want an obs_counter of 2 bytes, therefore we initialize it to 
   // 0xFF since it is immediately incremented by 1
@@ -131,7 +140,7 @@ sensor_periodic_handler(resource_t *r)
   obs_counter++;
   sensor_value = new_sensor_value();
   len = snprintf(str, sizeof(str), "%04u", sensor_value);
-  printf("S: %s\n", str);
+  //printf("S: %s\n", str);
   /* Build notification. */
   coap_packet_t notification[1];
 
@@ -139,39 +148,53 @@ sensor_periodic_handler(resource_t *r)
   coap_set_payload(notification, str, len);
   /* Notify the registered observers with the given message type, 
    * observe option, and payload. */
-  REST.notify_subscribers(r, obs_counter, notification);
+  //REST.notify_subscribers(r, obs_counter, notification);
+  REST.notify_subscribers(&sensor);
   // we always want an obs_counter of 2 bytes
   if(obs_counter == 0xFFFF) {
     obs_counter = 0xFF;
   }
 }
 
+
+
 /*----------------------------------------------------------------------------*/
 /*                          Fake Actuator Resoruce                            */
 /*----------------------------------------------------------------------------*/
-RESOURCE(actuator, METHOD_GET | METHOD_POST | METHOD_PUT, "actuator",
-         "title=\"A fake generic actuator\";rt=\"Text\"");
+void actuator_get_handler(void *request, void *response, uint8_t *buffer,
+                 uint16_t preferred_size, int32_t *offset);
+void
+actuator_set_handler(void *request, void *response, uint8_t *buffer,
+                 uint16_t preferred_size, int32_t *offset);
+
+static char setpoint[10];                 
+
+RESOURCE(actuator, "title=\"A fake generic actuator\";rt=\"Text\"",
+        actuator_get_handler, 
+        actuator_set_handler, 
+        actuator_set_handler, 
+        NULL);
+
 
 /*----------------------------------------------------------------------------*/
 void
-actuator_handler(void *request, void *response, uint8_t *buffer,
+actuator_set_handler(void *request, void *response, uint8_t *buffer,
                  uint16_t preferred_size, int32_t *offset)
 {
-  static char setpoint[10];
-  static uint8_t last_token_len = 0;
-  static uint8_t last_token[COAP_TOKEN_LEN];
-  const uint8_t *token;
+  //static uint8_t last_token_len = 0;
+  //static uint8_t last_token[COAP_TOKEN_LEN];
+  //const uint8_t *token;
   uint16_t len;
-  rest_resource_flags_t method;
   const uint8_t *ptr;
-  int i;
+  //int i;
 
   // Filter duplicated messages
   // FIXME: token option is not enough, we must check also the client ip address
-  len = coap_get_header_token(request, &token);
+  /*len = coap_get_token(request, &token);
   if(last_token_len == len) {
     for(i = 0; i < len && token[i] == last_token[i]; i++);
     if(i == len) {
+      printf("Duplicated");
       // duplicated message
       return;
     }
@@ -179,23 +202,29 @@ actuator_handler(void *request, void *response, uint8_t *buffer,
   last_token_len = len;
   for(i = 0; i < len; i++) {
     last_token[i] = token[i];
-  }
+  }*/ //FIXME andrea: this thing does not work anymore, returns always as duplicated
+  
 
-  method = REST.get_method_type(request);
-  if(method == METHOD_GET) {
-    len = strlen(setpoint);
-    memcpy(buffer, setpoint, len);
-    REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
-    REST.set_response_payload(response, buffer, len);
-  } else {                      // it's a put/post request
-    len = REST.get_request_payload(request, &ptr);
-    printf("A: %s\n", (char *)ptr);
-    if(len > 9) {
-      len = 9;
-    }
-    memcpy(setpoint, ptr, len);
-    setpoint[len] = '\0';
+  len = REST.get_request_payload(request, &ptr);
+  printf("A: %s\n", (char *)ptr);
+  if(len > 9) {
+    len = 9;
   }
+  memcpy(setpoint, ptr, len);
+  setpoint[len] = '\0';
+}
+
+/*----------------------------------------------------------------------------*/
+void
+actuator_get_handler(void *request, void *response, uint8_t *buffer,
+                 uint16_t preferred_size, int32_t *offset)
+{
+  uint16_t len;
+
+  len = strlen(setpoint);
+  memcpy(buffer, setpoint, len);
+  REST.set_header_content_type(response, REST.type.TEXT_PLAIN);
+  REST.set_response_payload(response, buffer, len);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -206,8 +235,8 @@ PROCESS_THREAD(tres_test_process, ev, data)
   srand(node_id);
   rest_init_engine();
   tres_init();
-  rest_activate_periodic_resource(&periodic_resource_sensor);
-  rest_activate_resource(&resource_actuator);
+  rest_activate_resource(&sensor, "sensor");
+  rest_activate_resource(&actuator, "actuator");
   tres_eval_init_button();
 
   PROCESS_END();

@@ -45,7 +45,7 @@
 #include <string.h>
 
 #include "contiki.h"
-#include "erbium.h"
+#include "er-coap.h"
 #include "pm.h"
 
 #include "tres.h"
@@ -147,8 +147,8 @@ send_reliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
   coap_init_message(request, COAP_TYPE_CON, COAP_PUT, coap_get_mid());
   coap_set_header_uri_path(request, path);
   coap_set_payload(request, payload, strlen((char *)payload));
-  token_len = coap_get_token(&token_ptr);
-  coap_set_header_token(request, token_ptr, token_len);
+  token_len = coap_generate_token(&token_ptr);
+  coap_set_token(request, token_ptr, token_len);
   t = coap_new_transaction(request->mid, addr, port);
   if(t) {
     t->callback = &client_chunk_handler;
@@ -339,7 +339,7 @@ tres_stop_monitoring(tres_res_t *task)
 
   // stop monitoring input resource
   for(is = list_head(task->is_list); is != NULL; is = list_item_next(is)) {
-    coap_remove_obs_subject(is->obs);
+    coap_obs_remove_observee(is->obs);
     is->obs = NULL;
   }
   task->monitoring = 0;

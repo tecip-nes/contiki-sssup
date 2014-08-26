@@ -47,18 +47,12 @@
 
 /*----------------------------------------------------------------------------*/
 #include "contiki.h"
-#include "erbium.h"
+#include "er-coap.h"
 #include "tres-mem.h"
 
-#if WITH_COAP == 7
-#include "er-coap-07-engine.h"
-#include "er-coap-07-observing-client.h"
-#elif WITH_COAP == 13
-#include "er-coap-13-engine.h"
-#include "er-coap-13-observing-client.h"
-#else
-#error "CoAP version defined by WITH_COAP not implemented"
-#endif
+
+#include "er-coap-engine.h"
+#include "er-coap-observe-client.h"
 
 /*----------------------------------------------------------------------------*/
 /*                   T-Res default configuration values                       */
@@ -106,10 +100,10 @@
 #define TRES_BASE_PATH "tasks"
 
 //! Maximimun number of tres tasks
-#define TRES_TASK_MAX_NUMBER 2
+#define TRES_TASK_MAX_NUMBER 1
 
 //! Maximimun number of is (shared among all tasks)
-#define TRES_IS_MAX_NUMBER 3
+#define TRES_IS_MAX_NUMBER 2
 
 //! Maximimun length of a task name
 #define TRES_TASK_NAME_MAX_LEN (8 + 1)
