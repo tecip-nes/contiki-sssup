@@ -41,7 +41,7 @@
 #include <inttypes.h>
 
 #include "contiki.h"
-#include "erbium.h"
+#include "er-coap.h"
 #include "pm.h"
 
 #include "tres.h"
@@ -372,9 +372,16 @@ parse_tasks_path(const char *path, uint16_t len, char *name, char *subres)
 /*----------------------------------------------------------------------------*/
 /*                            General /tasks Resource                         */
 /*----------------------------------------------------------------------------*/
-RESOURCE(tasks, METHOD_GET | METHOD_POST | METHOD_PUT | METHOD_DELETE |
-         HAS_SUB_RESOURCES, TRES_BASE_PATH,
-         "title=\"T-Res tasks index\";ct=40");
+void
+tasks_handler(void *request, void *response, uint8_t *buffer,
+              uint16_t preferred_size, int32_t *offset);
+
+PARENT_RESOURCE(tasks, 
+                "title=\"T-Res tasks index\";ct=40",
+                tasks_handler,
+                tasks_handler,
+                tasks_handler,
+                tasks_handler);
 
 /*----------------------------------------------------------------------------*/
 void
@@ -539,6 +546,8 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
   case HAS_SUB_RESOURCES:
     // dummy method
     break;
+  default:
+    break;    
   }
 }
 
@@ -593,6 +602,8 @@ is_handler(void *request, void *response, uint8_t *buffer,
   case HAS_SUB_RESOURCES:
     // TODO
     break;
+  default:
+    break;      
   }
 }
 
@@ -881,14 +892,15 @@ lo_event_handler(tres_res_t *task)
   // option, and payload
   r.url = task->lo_url;
   task->obs_count++;
-  REST.notify_subscribers(&r, task->obs_count, notification);
+  //REST.notify_subscribers(&r, task->obs_count, notification);
+  REST.notify_subscribers(&r); //TODO andrea: check this!!
 }
 /*----------------------------------------------------------------------------*/
 
 void
 tres_interface_init(void)
 {
-  rest_activate_resource(&resource_tasks);
+  rest_activate_resource(&tasks, TRES_BASE_PATH);
 }
 
 

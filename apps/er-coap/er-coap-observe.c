@@ -234,7 +234,7 @@ coap_observe_handler(resource_t *resource, void *request, void *response)
   coap_packet_t *const coap_res = (coap_packet_t *)response;
   coap_observer_t * obs;
 
-  static char content[16];
+  //static char content[16];
 
   if(coap_req->code == COAP_GET && coap_res->code < 128) { /* GET request and response without error code */
     if(IS_OPTION(coap_req, COAP_OPTION_OBSERVE)) {
@@ -271,3 +271,10 @@ coap_observe_handler(resource_t *resource, void *request, void *response)
   }
 }
 /*---------------------------------------------------------------------------*/
+list_t
+coap_get_observers(void)
+{
+  return observers_list;
+}
+/*---------------------------------------------------------------------------*/
+

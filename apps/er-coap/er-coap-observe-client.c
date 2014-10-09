@@ -189,7 +189,7 @@ coap_handle_notification(uip_ipaddr_t * addr, uint16_t port,
   coap_notification_flag_t flag;
   uint32_t observe;
 
-  PRINTF("coap_handle_norification()\n");
+  PRINTF("coap_handle_notification()\n");
   pkt = (coap_packet_t *) notification;
   token_len = coap_get_token(pkt, &token);
   PRINTF("Getting token\n");

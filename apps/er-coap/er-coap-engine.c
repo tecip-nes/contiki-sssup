@@ -158,9 +158,9 @@ coap_receive(void)
                     PRINTF
                       ("Blockwise: unaware resource with payload length %u/%u\n",
                       response->payload_len, block_size);
-                    if(block_offset >= response->payload_len) {
+                    if(block_offset >= response->payload_len) { //FIXME: andrea: maybe should be just > 
                       PRINTF
-                        ("handle_incoming_data(): block_offset >= response->payload_len\n");
+                        ("handle_incoming_data(): block_offset >= response->payload_len %u/%u\n", block_offset, response->payload_len);
 
                       response->code = BAD_OPTION_4_02;
                       coap_set_payload(response, "BlockOutOfScope", 15); /* a const char str[] and sizeof(str) produces larger code size */
@@ -239,7 +239,9 @@ coap_receive(void)
                                       UIP_UDP_BUF->srcport, message->mid);
         }
 
-        if((transaction = coap_get_transaction_by_mid(message->mid))) {
+        transaction = coap_get_transaction_by_mid(message->mid);
+        if (message->type != COAP_TYPE_CON && transaction)
+        {
           /* free transaction memory before callback, as it may create a new transaction */
           restful_response_handler callback = transaction->callback;
           void *callback_data = transaction->callback_data;
