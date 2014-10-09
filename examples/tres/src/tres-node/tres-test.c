@@ -139,7 +139,7 @@ sensor_periodic_handler(void)
   obs_counter++;
   sensor_value = new_sensor_value();
   len = snprintf(str, sizeof(str), "%04u", sensor_value);
-  printf("S: %s\n", str);
+  //printf("S: %s\n", str);
   /* Build notification. */
   coap_packet_t notification[1];
 
