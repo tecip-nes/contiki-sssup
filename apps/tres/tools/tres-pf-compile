@@ -8,7 +8,7 @@ function run {
   filename=$(basename "$2")
   filename="${filename%.*}"
   echo Creating ${filename}.pyc...
-  ${SCRIPTDIR}/../../pymite/tools/pmImgCreator.py -f $1 -b  -o ${filename}.pyc \
+  ${SCRIPTDIR}/../../pymite/tools/pmImgCreator.py -f $1 -b  -o /tmp/${filename}.pyc \
       /tmp/pf.py
 }
 
