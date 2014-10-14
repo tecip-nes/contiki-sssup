@@ -105,6 +105,11 @@
 //! Maximimun number of is (shared among all tasks)
 #define TRES_IS_MAX_NUMBER 2
 
+//! Maximimun number of data input (shared among all tasks)
+#define TRES_DATA_MAX_NUMBER 20
+
+#define TRES_DEFAULT_EXECUTION_PERIOD 60
+
 //! Maximimun length of a task name
 #define TRES_TASK_NAME_MAX_LEN (8 + 1)
 
@@ -129,12 +134,19 @@ typedef struct tres_od_s {
   char path[TRES_PATH_LEN_MAX];
 } tres_od_t;
 
+typedef struct tres_input_data_s {
+  struct tres_input_data_s *next;
+  uint16_t data;
+  char tag[TRES_TAG_MAX_LEN];
+} tres_idata_t;
+
 typedef struct tres_tres_s {
   char name[TRES_TASK_NAME_MAX_LEN];
   char lo_url[sizeof("tasks") + TRES_TASK_NAME_MAX_LEN + sizeof("lo")];
   uint8_t *pf_img;
   int8_t sid;
   LIST_STRUCT(is_list);
+  LIST_STRUCT(idata_list);
   tres_od_t od[1];
   char *last_input_tag;
   uint8_t last_input[REST_MAX_CHUNK_SIZE];
@@ -143,6 +155,8 @@ typedef struct tres_tres_s {
   uint16_t obs_count;
   uint8_t state_len;
   uint8_t monitoring;
+  uint16_t period;
+  uint16_t ticks;
 } tres_res_t;
 
 /*----------------------------------------------------------------------------*/

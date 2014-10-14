@@ -39,7 +39,7 @@
 
 #include <string.h>
 #include <inttypes.h>
-
+#include <stdlib.h>
 #include "contiki.h"
 #include "er-coap.h"
 #include "pm.h"
@@ -167,6 +167,12 @@ static void task_is_delete_all(tres_res_t *task);
 /*                         T-Res data Helper functions                        */
 /*----------------------------------------------------------------------------*/
 
+
+struct memb* get_tasks_mem(void)
+{
+  return &tasks_mem;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
  * \breif Init a task struct
@@ -179,6 +185,7 @@ static void
 task_init(tres_res_t *task)
 {
   LIST_STRUCT_INIT(task, is_list);
+  LIST_STRUCT_INIT(task, idata_list);
   task_reset_state(task);
   task_od_reset(task);
 }
@@ -195,11 +202,12 @@ static void
 task_reset_state(tres_res_t *task)
 {
   task->state_len = 0;
+  task->ticks = 0;
 }
 
 /*----------------------------------------------------------------------------*/
 tres_res_t *
-tres_add_task(const char *name)
+tres_add_task(const char *name, uint16_t period)
 {
   tres_res_t *task;
 
@@ -211,6 +219,7 @@ tres_add_task(const char *name)
              task->name);
     task->last_output[0] = '\0';
     task->obs_count = 0;
+    task->period = period;
     task_init(task);
   }
 
@@ -265,7 +274,6 @@ tres_find_task(const char *name)
 
   return retv;
 }
-
 
 /*----------------------------------------------------------------------------*/
 static int
@@ -462,14 +470,21 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
   tres_res_t *task;
   int32_t strpos;
   int16_t bufpos;
-
+  const char *query = NULL;
+  size_t len = 0;
+  uint16_t period = TRES_DEFAULT_EXECUTION_PERIOD;
   PRINTF("task_name_handler()\n");
   method = REST.get_method_type(request);
   task = tres_find_task(name);
   if(task == NULL) {
     if(method == METHOD_PUT) {
+      if ((len=REST.get_query_variable(request, "per", &query))) {
+        PRINTF("query");
+        period = atoi(query);
+        PRINTF("period = %d", period);
+      }
       //create task,  if error return internal server error
-      task = tres_add_task(name);
+      task = tres_add_task(name, period);
       if(task == NULL) {
         REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
         return;
@@ -533,11 +548,30 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
     // put is already handled before to reduce code redundancy
     break;
   case METHOD_POST:
-    // toggle task activation
-    if(tres_toggle_monitoring(task)) {
-      SET_RESPONSE_TEXT_PAYLOAD(response, "Task now running");
-    } else {
-      SET_RESPONSE_TEXT_PAYLOAD(response, "Task now halted");
+    if ((len=REST.get_query_variable(request, "op", &query))) {
+      PRINTF("query");
+      if (strncmp(query, "on", len)==0) {
+        PRINTF("start");
+        if(!task->monitoring) {
+          tres_start_monitoring(task);
+        }
+        SET_RESPONSE_TEXT_PAYLOAD(response, "Task now running");
+           
+      } else if (strncmp(query, "off", len)==0) {
+        PRINTF("start");
+        if(task->monitoring) {
+          tres_stop_monitoring(task);
+        }
+        SET_RESPONSE_TEXT_PAYLOAD(response, "Task now halted");        
+      }          
+    }
+    else{
+      // toggle task activation
+      if(tres_toggle_monitoring(task)) {
+        SET_RESPONSE_TEXT_PAYLOAD(response, "Task now running");
+      } else {
+        SET_RESPONSE_TEXT_PAYLOAD(response, "Task now halted");
+      }
     }
     break;
   case METHOD_DELETE:

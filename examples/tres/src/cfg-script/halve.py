@@ -1,5 +1,6 @@
 from tres_pymite import *
-print "Halve:",
-i = getIntInput()
-print i/2.
-setOutput(i/2.)
+i = getInputList()
+print "list:",
+print len(i), i
+if len(i) != 0:
+  print sum(i) / len(i)

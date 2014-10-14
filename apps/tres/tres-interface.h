@@ -41,6 +41,8 @@
 #ifndef __TRES_INTERFACE_H__
 #define __TRES_INTERFACE_H__
 
+#include "memb.h"
+
 /*!
  * \brief Inits the T-Res RESTful interface
  */
@@ -50,5 +52,11 @@ void tres_interface_init(void);
  * \brief Notifies the observers of a task last-output resource (/lo)
  */
 void lo_event_handler(tres_res_t *task);
+
+/*!
+ * \brief Returns a pointer to the tasks table
+ */
+struct memb* get_tasks_mem(void); 
+
 
 #endif /* __TRES_INTERFACE_H__ */

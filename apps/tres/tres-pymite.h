@@ -42,7 +42,9 @@
 #include <stdint.h>
 
 #include "pm.h"
-
+#include "tres-mem.h"
+#include "list_unrename.h"
+#include "core/lib/list.h"
 /*----------------------------------------------------------------------------*/
 #ifdef TRES_CONF_PM_HEAPSIZE
 #define HS TRES_CONF_PM_HEAPSIZE
@@ -64,13 +66,18 @@ typedef struct tres_pm_io_s {
   uint8_t *state_len;
   uint8_t output_set;
   char *tag;
+  LIST_STRUCT(io_data_list);
 } tres_pm_io_t;
+
+#include "list_rename.h"
 
 PmReturn_t tres_pm_set_output(pPmFrame_t *ppframe);
 
 PmReturn_t tres_pm_get_input_tag(pPmFrame_t *ppframe);
 
 PmReturn_t tres_pm_get_input(pPmFrame_t *ppframe);
+
+PmReturn_t tres_pm_get_input_list(pPmFrame_t *ppframe);
 
 PmReturn_t tres_pm_get_int_input(pPmFrame_t *ppframe);
 

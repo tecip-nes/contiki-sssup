@@ -198,6 +198,32 @@ tres_pm_get_float_input(pPmFrame_t *ppframe)
 }
 
 /*----------------------------------------------------------------------------*/
+PmReturn_t
+tres_pm_get_input_list(pPmFrame_t *ppframe)
+{
+  pPmObj_t pl;
+  pPmObj_t pi = C_NULL;
+  int16_t i = 0;
+  PmReturn_t retv = PM_RET_OK;
+
+  retv = list_new(&pl);
+  PM_RETURN_IF_ERROR(retv);
+
+  tres_idata_t *idata;
+  for(idata = list_head(tres_pm_io.io_data_list);
+	  idata != NULL;
+	  idata = list_item_next(idata)) {
+
+	retv = int_new(idata->data, &pi);
+    PM_RETURN_IF_ERROR(retv);
+    retv = list_append(pl, pi);
+    PM_RETURN_IF_ERROR(retv);
+  }
+  NATIVE_SET_TOS(pl);
+  return retv;
+}
+
+/*----------------------------------------------------------------------------*/
 static int
 pop_int(int32_t *val)
 {

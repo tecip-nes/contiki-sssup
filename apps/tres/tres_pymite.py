@@ -17,6 +17,11 @@ def getInputTag():
   return tres_pm_get_input_tag(ppframe); 
   """
 
+def getInputList():
+  """__NATIVE__
+  return tres_pm_get_input_list(ppframe); 
+  """
+
 def getIntInput():
   """__NATIVE__
   return tres_pm_get_int_input(ppframe); 

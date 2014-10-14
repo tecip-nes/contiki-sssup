@@ -4,7 +4,7 @@ function run {
   MYDIR="$(dirname "$(which "$0")")"
   ${MYDIR}/tres-pf-compile $2
   echo "Creating $1"
-  ${MYDIR}/bin/coap-client -m put $1
+  ${MYDIR}/bin/coap-client -m put $1?per=10
   echo "Setting $1/pf /tmp/$2c"
   ${MYDIR}/bin/coap-client -m put $1/pf -b 64 -f /tmp/$2c
   echo "Setting $1/is"
