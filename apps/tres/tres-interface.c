@@ -479,9 +479,8 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
   if(task == NULL) {
     if(method == METHOD_PUT) {
       if ((len=REST.get_query_variable(request, "per", &query))) {
-        PRINTF("query");
         period = atoi(query);
-        PRINTF("period = %d", period);
+        PRINTF("period = %d\n", period);
       }
       //create task,  if error return internal server error
       task = tres_add_task(name, period);
@@ -848,6 +847,7 @@ pf_handler(void *request, void *response, uint8_t *buffer,
     if(b1_offset == 0) {
       // ... but, if the first byte is not 0x0a than it is not python bytecode
       if(payload[0] != 0x0a) {
+        PRINTF("First byte MUST be 0a\n");
         REST.set_response_status(response, REST.status.BAD_REQUEST);
         return;
       }
