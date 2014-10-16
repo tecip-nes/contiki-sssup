@@ -329,7 +329,7 @@ is_notification_callback(coap_observee_t *obs, void *notification,
     memcpy(task->last_input, payload, len);
     task->last_input[len] = '\0';
     task->last_input_tag = is->tag;
-    val = (int16_t)strtol(payload, NULL, 10);
+    val = (int16_t)strtol((const char *)payload, NULL, 10);
     task_idata_add(task, val);
     //process_post(&pf_process, new_input_event, task);
     break;
