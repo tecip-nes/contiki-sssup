@@ -258,7 +258,7 @@ PROCESS_THREAD(periodic_output, ev, data)
       struct memb* tasks = get_tasks_mem();
       for(i = 0; i < tasks->num; i++) {
         task = &tasks->mem[i];
-        if (task->period != 0){
+        if (task->monitoring == 1 && task->period != 0){
           if (task->period <= task->ticks){
             int len = list_length(task->idata_list);
         	PRINTF("timer expired for %s, %d elem \n", task->name, len);
