@@ -1035,8 +1035,10 @@ in_handler(void *request, void *response, uint8_t *buffer,
   }
   len = coap_get_payload(request, &payload);
   if(len > 0){
+	memcpy(task->last_input, payload, len);
+	task->last_input[len] = '\0';
 	val = (int16_t)strtol((const char *)payload, NULL, 10);
-	task_idata_add(task, val);
+	new_input_data(task, val);
 	REST.set_response_status(response, REST.status.CHANGED);
 	return;
   }

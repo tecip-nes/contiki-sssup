@@ -78,7 +78,7 @@
 /*                              Global variables                              */
 /*----------------------------------------------------------------------------*/
 
-//PROCESS(pf_process, "T-res processing function process");
+PROCESS(pf_process, "T-res processing function process");
 PROCESS(periodic_output, "T-res periodic output manager");
 
 extern struct tres_pm_io_s tres_pm_io;
@@ -166,6 +166,16 @@ send_reliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
 #else /* !TRES_RELIABLE */
 
 /*----------------------------------------------------------------------------*/
+void new_input_data(tres_res_t *task, int16_t val){
+  if (task->period == 0){
+    process_post(&pf_process, new_input_event, task);
+  }
+  else{
+    task_idata_add(task, val);
+  }
+}
+
+/*----------------------------------------------------------------------------*/
 static void
 send_unreliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
 {
@@ -215,6 +225,7 @@ run_processing_func(tres_res_t *task)
   tres_pm_io.output_set = 0;
   tres_pm_io.state = task->state;
   tres_pm_io.state_len = &task->state_len;
+  tres_pm_io.od_count = list_length(task->od_list);
   LIST_STRUCT_INIT(&tres_pm_io, io_data_list);
   list_copy(tres_pm_io.io_data_list, task->idata_list);
   pm_run_from_img((uint8_t *)"pf", MEMSPACE_PROG, task->pf_img);
@@ -231,7 +242,7 @@ run_processing_func(tres_res_t *task)
 }
 
 /*----------------------------------------------------------------------------*/
-/*PROCESS_THREAD(pf_process, ev, data)
+PROCESS_THREAD(pf_process, ev, data)
 {
   PROCESS_BEGIN();
   PRINTF("PF process\n");
@@ -242,7 +253,7 @@ run_processing_func(tres_res_t *task)
     run_processing_func((tres_res_t *)data);
   }
   PROCESS_END();
-}*/
+}
 
 /*----------------------------------------------------------------------------*/
 static struct etimer et;
@@ -333,8 +344,7 @@ is_notification_callback(coap_observee_t *obs, void *notification,
     task->last_input[len] = '\0';
     task->last_input_tag = is->tag;
     val = (int16_t)strtol((const char *)payload, NULL, 10);
-    task_idata_add(task, val);
-    //process_post(&pf_process, new_input_event, task);
+    new_input_data(task, val);
     break;
   case OBSERVE_OK:
     PRINTF("OBSERVE_OK: %*s\n", len, (char *)payload);
@@ -379,9 +389,9 @@ tres_start_monitoring(tres_res_t *task)
   tres_is_t *is;
 
   // check if input sources list is not empty
-  if(list_length(task->is_list) == 0) {
-    return -1;
-  }
+  //if(list_length(task->is_list) == 0) {
+  // return -1;
+  //}
   // start monitoring input resources:
   // find first resource to observe and issue an observe request, that will 
   // cause a chain reaction causing all other sources to be observed as well, 
@@ -391,11 +401,11 @@ tres_start_monitoring(tres_res_t *task)
       is->obs = coap_obs_request_registration(is->addr, TRES_REMOTE_PORT,
                                               is->path,
                                               is_notification_callback, task);
-      task->monitoring = 1;
-      return 1;
+
     }
   }
-  return 0;
+  task->monitoring = 1;
+  return 1;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -440,6 +450,6 @@ tres_init(void)
 
   tres_interface_init();
 
-  //process_start(&pf_process, NULL);
+  process_start(&pf_process, NULL);
   process_start(&periodic_output, NULL);
 }
