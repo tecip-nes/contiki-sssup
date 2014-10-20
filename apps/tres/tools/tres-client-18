@@ -18,7 +18,14 @@ function run {
   if [ -n "$4" ]
   then
     echo "Setting $1/od to $4"
-    echo -n "$4" | ${MYDIR}/bin/coap-client -m put $1/od -f -
+    IFS=',' read -a od <<< "$4"
+    
+    echo -n "${od[0]}" | ${MYDIR}/bin/coap-client -m put $1/od -f -
+    unset "od[0]"
+    for element in "${od[@]}"
+    do
+      echo -n "$element" | ${MYDIR}/bin/coap-client -m post $1/od -f -
+    done    
   fi
   echo "Start T-Res Task"
   ${MYDIR}/bin/coap-client -m post $1

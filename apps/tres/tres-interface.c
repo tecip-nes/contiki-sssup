@@ -48,7 +48,7 @@
 #include "tres-pymite.h"
 #include "list_unrename.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #define PRINTF(...) printf(__VA_ARGS__)
 #define PRINTFLN(format, ...) printf(format "\n", ##__VA_ARGS__)
@@ -110,6 +110,7 @@
 
 MEMB(tasks_mem, tres_res_t, TRES_TASK_MAX_NUMBER);
 MEMB(is_mem, tres_is_t, TRES_IS_MAX_NUMBER);
+MEMB(od_mem, tres_od_t, TRES_OD_MAX_NUMBER);
 
 /*----------------------------------------------------------------------------*/
 /*                            Forward Declarations                            */
@@ -126,8 +127,18 @@ static inline void is_handler_post(void *request, void *response,
                                    uint8_t *buffer, uint16_t preferred_size,
                                    int32_t *offset, tres_res_t *task);
 
-static int16_t create_coap_url(char *url, int16_t max_len, uip_ipaddr_t *addr,
-                              char *path);
+static inline void od_handler_get(void *request, void *response,
+                                  uint8_t *buffer, uint16_t preferred_size,
+                                  int32_t *offset, tres_res_t *task);
+
+static inline void od_handler_put(void *request, void *response,
+                                  uint8_t *buffer, uint16_t preferred_size,
+                                  int32_t *offset, tres_res_t *task);
+
+static inline void od_handler_post(void *request, void *response,
+                                   uint8_t *buffer, uint16_t preferred_size,
+                                   int32_t *offset, tres_res_t *task);
+
 
 static char *parse_tag(char *tag, const char *buf, uint16_t max_len);
 
@@ -162,7 +173,6 @@ static inline int16_t create_coap_base_url(char *url, int16_t max_len,
 
 static void task_reset_state(tres_res_t *task);
 
-static void task_od_reset(tres_res_t *task);
 
 static void task_is_delete_all(tres_res_t *task);
 
@@ -188,9 +198,9 @@ static void
 task_init(tres_res_t *task)
 {
   LIST_STRUCT_INIT(task, is_list);
+  LIST_STRUCT_INIT(task, od_list);
   LIST_STRUCT_INIT(task, idata_list);
   task_reset_state(task);
-  task_od_reset(task);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -280,6 +290,41 @@ tres_find_task(const char *name)
 
 /*----------------------------------------------------------------------------*/
 static int
+task_od_add(tres_res_t *task, const char *str)
+{
+  tres_od_t *od;
+
+  od = memb_alloc(&od_mem);
+  if(od == NULL) {
+    return ERR_IS_NONE_FREE;
+  }
+  str = parse_url(str, od->addr, od->path, TRES_PATH_LEN_MAX);
+  if(str == NULL) {
+    memb_free(&od_mem, od);
+    return ERR_IS_INVALID_URL;
+  }
+  list_add(task->od_list, od);
+  return ERR_NONE;
+}
+
+/*----------------------------------------------------------------------------*/
+static void
+task_od_delete_all(tres_res_t *task)
+{
+  tres_od_t *od;
+
+  tres_stop_monitoring(task);
+  od = list_pop(task->od_list);
+  while(od) {
+    memb_free(&od_mem, od);
+    od = list_pop(task->od_list);
+  }
+  task_reset_state(task);
+}
+
+
+/*----------------------------------------------------------------------------*/
+static int
 task_is_add(tres_res_t *task, const char *str)
 {
   tres_is_t *is;
@@ -318,22 +363,6 @@ task_is_delete_all(tres_res_t *task)
   task_reset_state(task);
 }
 
-/*----------------------------------------------------------------------------*/
-static int
-task_od_set(tres_res_t *task, const char *str)
-{
-  str = parse_url(str, task->od->addr, task->od->path, TRES_PATH_LEN_MAX);
-  if(str == NULL) {
-    return ERR_OD_INVALID_URL;
-  }
-  return ERR_NONE;
-}
-
-static void
-task_od_reset(tres_res_t *task)
-{
-  memset(task->od, 0, sizeof(tres_od_t));
-}
 
 /*----------------------------------------------------------------------------*/
 static int
@@ -621,6 +650,127 @@ subres_handler(void *request, void *response, uint8_t *buffer,
 //RESOURCE(is, METHOD_GET | METHOD_POST | METHOD_PUT, "tasks/t1/is",             
 //         "title=\"The input soruces for task 1\";rt=\"Text\"");
 
+
+/*----------------------------------------------------------------------------*/
+void
+od_handler(void *request, void *response, uint8_t *buffer,
+           uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+  rest_resource_flags_t method;
+
+  method = REST.get_method_type(request);
+  switch (method) {
+  case METHOD_GET:
+    od_handler_get(request, response, buffer, preferred_size, offset, task);
+    break;
+  case METHOD_PUT:
+    od_handler_put(request, response, buffer, preferred_size, offset, task);
+    break;
+  case METHOD_POST:
+    od_handler_post(request, response, buffer, preferred_size, offset, task);
+    break;
+  case METHOD_DELETE:
+    task_od_delete_all(task);
+    REST.set_response_status(response, REST.status.DELETED);
+    break;
+  case HAS_SUB_RESOURCES:
+    // TODO
+    break;
+  default:
+    break;
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+static void
+od_handler_get(void *request, void *response, uint8_t *buffer,
+               uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+  tres_od_t *od;
+  char base_url[BASE_URL_LEN];
+  int32_t strpos;
+  int16_t bufpos;
+
+  PRINTF("od_handler_get()\n");
+  strpos = 0;
+  bufpos = 0;
+  for(od = list_head(task->od_list); od != NULL; od = list_item_next(od)) {
+    if(strpos == 0) {
+      BLOCK_SPRINTF("<", strpos, bufpos, offset, preferred_size, buffer);
+    } else {
+      BLOCK_SPRINTF(",<", strpos, bufpos, offset, preferred_size, buffer);
+    }
+    create_coap_base_url(base_url, BASE_URL_LEN, od->addr);
+    BLOCK_SPRINTF(base_url, strpos, bufpos, offset, preferred_size, buffer);
+    BLOCK_SPRINTF(od->path, strpos, bufpos, offset, preferred_size, buffer);
+    BLOCK_SPRINTF(">", strpos, bufpos, offset, preferred_size, buffer);
+  }
+  REST.set_response_payload(response, buffer, bufpos);
+  REST.set_header_content_type(response, APPLICATION_LINK_FORMAT);
+  if(bufpos >= preferred_size || *offset > 0) {
+    if(od == NULL) {
+      *offset = -1;
+    } else {
+      *offset += preferred_size;
+    }
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+static void
+od_handler_post(void *request, void *response, uint8_t *buffer,
+                uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+  const char *ptr;
+  int retv;
+
+  REST.get_request_payload(request, (const uint8_t **)&ptr);
+  PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
+  retv = task_od_add(task, ptr);
+  if(retv == ERR_NONE) {
+    REST.set_response_status(response, REST.status.CHANGED);
+    return;
+  }
+  if(retv == ERR_IS_INVALID_URL) {
+    REST.set_response_status(response, REST.status.BAD_REQUEST);
+    return;
+  }
+  if(retv == ERR_IS_NONE_FREE) {
+    REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
+    return;
+  }
+}
+
+/*----------------------------------------------------------------------------*/
+static void
+od_handler_put(void *request, void *response, uint8_t *buffer,
+               uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+  uint16_t len;
+  const char *ptr;
+  int retv;
+
+  len = REST.get_request_payload(request, (const uint8_t **)&ptr);
+  PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
+  PRINTF("Req len = %d\n", len);
+  task_od_delete_all(task);
+  if(len != 0) {
+    retv = task_od_add(task, ptr);
+    if(retv == ERR_NONE) {
+      REST.set_response_status(response, REST.status.CHANGED);
+      return;
+    }
+    if(retv == ERR_IS_INVALID_URL) {
+      REST.set_response_status(response, REST.status.BAD_REQUEST);
+      return;
+    }
+    if(retv == ERR_IS_NONE_FREE) {
+      REST.set_response_status(response, REST.status.INTERNAL_SERVER_ERROR);
+      return;
+    }
+  }
+}
+
 /*----------------------------------------------------------------------------*/
 void
 is_handler(void *request, void *response, uint8_t *buffer,
@@ -746,59 +896,6 @@ is_handler_put(void *request, void *response, uint8_t *buffer,
   }
 }
 
-/*----------------------------------------------------------------------------*/
-/*                          Output Destination Resoruce                       */
-/*----------------------------------------------------------------------------*/
-//RESOURCE(od, METHOD_GET | METHOD_POST | METHOD_PUT, "tasks/t1/od",
-//         "title=\"The output detinations for task 1\"; rt=\"Text\"");
-
-/*----------------------------------------------------------------------------*/
-void
-od_handler(void *request, void *response, uint8_t *buffer,
-           uint16_t preferred_size, int32_t *offset, tres_res_t *task)
-{
-  uint16_t len;
-  rest_resource_flags_t method;
-  const char *ptr;
-  int retv;
-  int16_t pos;
-
-  method = REST.get_method_type(request);
-  switch (method) {
-  case METHOD_GET:
-    if(!uip_is_addr_unspecified(task->od->addr)) {
-      pos = snprintf((char *)buffer, REST_MAX_CHUNK_SIZE, "<");
-      pos += create_coap_url((char *)buffer + pos, REST_MAX_CHUNK_SIZE,
-                             task->od->addr, task->od->path);
-      pos += snprintf((char *)buffer + pos, REST_MAX_CHUNK_SIZE, ">");
-      if(pos >= REST_MAX_CHUNK_SIZE) {
-        PRINTF("ERROR: input source resource larger than REST_MAX_CHUNK_SIZE");
-        //TODO: return error code
-      }
-      len = strlen((char *)buffer);
-      REST.set_header_content_type(response, REST.type.APPLICATION_LINK_FORMAT);
-      REST.set_response_payload(response, buffer, len);
-    }
-    break;
-  case METHOD_PUT:
-    len = REST.get_request_payload(request, (const uint8_t **)&ptr);
-    PRINTF("Req str len = %u\n", (unsigned int)strlen(ptr));
-    PRINTF("Req len = %d\n", len);
-    retv = task_od_set(task, ptr);
-    if(retv == ERR_NONE) {
-      REST.set_response_status(response, REST.status.CHANGED);
-    } else {
-      REST.set_response_status(response, REST.status.BAD_REQUEST);
-    }
-    break;
-  case METHOD_DELETE:
-    task_od_reset(task);
-    REST.set_response_status(response, REST.status.DELETED);
-    break;
-  default:
-    REST.set_response_status(response, REST.status.METHOD_NOT_ALLOWED);
-  }
-}
 
 /*----------------------------------------------------------------------------*/
 /*                         Processing Function Resoruce                       */
@@ -928,7 +1025,6 @@ in_handler(void *request, void *response, uint8_t *buffer,
            uint16_t preferred_size, int32_t *offset, tres_res_t *task)
 {
   rest_resource_flags_t method;
-  resource_t r[1];
   const uint8_t *payload;
   int len;
   int16_t val;
@@ -1019,19 +1115,6 @@ create_coap_base_url(char *url, int16_t max_len, uip_ipaddr_t *addr)
 }
 
 
-/*----------------------------------------------------------------------------*/
-static int16_t
-create_coap_url(char *url, int16_t max_len, uip_ipaddr_t *addr, char *path)
-{
-  int16_t pos;
-  int16_t len;
-
-  pos = create_coap_base_url(url, max_len, addr);
-  len = (max_len - pos > 0) ? max_len - pos : 0;
-  pos += snprintf(url + pos, len, "%s", path);
-
-  return pos;
-}
 
 /*----------------------------------------------------------------------------*/
 static char *

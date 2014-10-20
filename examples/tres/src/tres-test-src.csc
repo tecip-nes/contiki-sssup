@@ -117,11 +117,25 @@
       </interface_config>
       <motetype_identifier>wismote2</motetype_identifier>
     </mote>
+    <mote>
+      <breakpoints />
+      <interface_config>
+        org.contikios.cooja.interfaces.Position
+        <x>139.38904487315523</x>
+        <y>76.67017746718393</y>
+        <z>0.0</z>
+      </interface_config>
+      <interface_config>
+        org.contikios.cooja.mspmote.interfaces.MspMoteID
+        <id>5</id>
+      </interface_config>
+      <motetype_identifier>wismote2</motetype_identifier>
+    </mote>
   </simulation>
   <plugin>
     org.contikios.cooja.plugins.SimControl
     <width>319</width>
-    <z>1</z>
+    <z>3</z>
     <height>160</height>
     <location_x>1</location_x>
     <location_y>289</location_y>
@@ -135,10 +149,10 @@
       <skin>org.contikios.cooja.plugins.skins.UDGMVisualizerSkin</skin>
       <skin>org.contikios.cooja.plugins.skins.AddressVisualizerSkin</skin>
       <skin>org.contikios.cooja.plugins.skins.MoteTypeVisualizerSkin</skin>
-      <viewport>3.10553046732084 0.0 0.0 3.10553046732084 -133.83713431265463 -124.56991665762291</viewport>
+      <viewport>2.412476768058409 0.0 0.0 2.412476768058409 -93.22737793288364 -68.77404971574416</viewport>
     </plugin_config>
     <width>319</width>
-    <z>0</z>
+    <z>2</z>
     <height>288</height>
     <location_x>1</location_x>
     <location_y>1</location_y>
@@ -151,7 +165,7 @@
       <coloring />
     </plugin_config>
     <width>584</width>
-    <z>5</z>
+    <z>1</z>
     <height>688</height>
     <location_x>320</location_x>
     <location_y>1</location_y>
@@ -160,7 +174,7 @@
     SerialSocketServer
     <mote_arg>0</mote_arg>
     <width>322</width>
-    <z>6</z>
+    <z>7</z>
     <height>99</height>
     <location_x>-1</location_x>
     <location_y>449</location_y>
@@ -173,7 +187,7 @@
       <coloring />
     </plugin_config>
     <width>463</width>
-    <z>2</z>
+    <z>4</z>
     <height>234</height>
     <location_x>904</location_x>
     <location_y>455</location_y>
@@ -186,7 +200,7 @@
       <coloring />
     </plugin_config>
     <width>462</width>
-    <z>3</z>
+    <z>5</z>
     <height>228</height>
     <location_x>904</location_x>
     <location_y>226</location_y>
@@ -199,10 +213,23 @@
       <coloring />
     </plugin_config>
     <width>462</width>
-    <z>4</z>
+    <z>6</z>
     <height>226</height>
     <location_x>904</location_x>
     <location_y>-1</location_y>
+  </plugin>
+  <plugin>
+    org.contikios.cooja.plugins.LogListener
+    <plugin_config>
+      <filter>ID:5</filter>
+      <formatted_time />
+      <coloring />
+    </plugin_config>
+    <width>463</width>
+    <z>0</z>
+    <height>226</height>
+    <location_x>904</location_x>
+    <location_y>689</location_y>
   </plugin>
 </simconf>
 

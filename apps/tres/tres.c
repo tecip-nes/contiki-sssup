@@ -189,11 +189,13 @@ send_unreliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
 static void
 tres_send_output(tres_res_t *task)
 {
-  PRINTFLN("--Requesting %s--", task->od->path);
-  PRINT6ADDR(&task->od->addr);
-  PRINTFLN(" : %u", UIP_HTONS(TRES_REMOTE_PORT));
-  tres_send(task->od->addr, TRES_REMOTE_PORT, task->od->path,
-            task->last_output);
+  tres_od_t *od;
+  for(od = list_head(task->od_list); od != NULL; od = list_item_next(od)) {
+	PRINTFLN("--Requesting %s--", od->path);
+	PRINT6ADDR(od->addr);
+	tres_send(od->addr, TRES_REMOTE_PORT, od->path,
+	          task->last_output);
+  }
   PRINTFLN("--Done--");
 }
 
@@ -220,7 +222,8 @@ run_processing_func(tres_res_t *task)
   //PRINTF("Python finished, return of 0x%02x\n", retval);
   // send output to destination
   if(tres_pm_io.output_set) {
-    if(!uip_is_addr_unspecified(task->od->addr)) {
+	if(list_length(task->od_list) > 0) {
+	  PRINTF("od list len > 0, send output\n");
       tres_send_output(task);
     }
     lo_event_handler(task);

@@ -103,7 +103,10 @@
 #define TRES_TASK_MAX_NUMBER 1
 
 //! Maximimun number of is (shared among all tasks)
-#define TRES_IS_MAX_NUMBER 2
+#define TRES_IS_MAX_NUMBER 3
+
+//! Maximimun number of id (shared among all tasks)
+#define TRES_OD_MAX_NUMBER 3
 
 //! Maximimun number of data input (shared among all tasks)
 #define TRES_DATA_MAX_NUMBER 20
@@ -130,6 +133,7 @@ typedef struct tres_is_s {
 } tres_is_t;
 
 typedef struct tres_od_s {
+  struct tres_is_s *next;
   uip_ipaddr_t addr[1];
   char path[TRES_PATH_LEN_MAX];
 } tres_od_t;
@@ -147,7 +151,7 @@ typedef struct tres_tres_s {
   int8_t sid;
   LIST_STRUCT(is_list);
   LIST_STRUCT(idata_list);
-  tres_od_t od[1];
+  LIST_STRUCT(od_list);
   char *last_input_tag;
   uint8_t last_input[REST_MAX_CHUNK_SIZE];
   uint8_t last_output[REST_MAX_CHUNK_SIZE];
