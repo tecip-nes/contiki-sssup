@@ -39,6 +39,8 @@
  *
  * \author
  *      Daniele Alessandrelli - <d.alessandrelli@sssup.it>
+ * \author
+ *      Andrea Azzarà - <a.azzara@sssup.it>
  */
 
 
