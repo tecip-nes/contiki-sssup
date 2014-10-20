@@ -67,6 +67,7 @@ typedef struct tres_pm_io_s {
   uint8_t output_set;
   char *tag;
   LIST_STRUCT(io_data_list);
+  uint8_t od_count;
 } tres_pm_io_t;
 
 #include "list_rename.h"
@@ -91,4 +92,5 @@ PmReturn_t tres_pm_get_state(pPmFrame_t *ppframe);
 
 PmReturn_t tres_pm_save_state(pPmFrame_t *ppframe);
 
+PmReturn_t tres_pm_get_od_count(pPmFrame_t *ppframe);
 #endif /* __TRES_PYMITE_H__ */

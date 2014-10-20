@@ -32,6 +32,11 @@ def getFloatInput():
   return tres_pm_get_float_input(ppframe); 
   """
 
+def getOdCount():
+  """__NATIVE__
+  return tres_pm_get_od_count(ppframe); 
+  """
+
 def _getState(cli):
   """__NATIVE__
   return tres_pm_get_state(ppframe); 

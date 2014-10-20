@@ -199,6 +199,17 @@ tres_pm_get_float_input(pPmFrame_t *ppframe)
 
 /*----------------------------------------------------------------------------*/
 PmReturn_t
+tres_pm_get_od_count(pPmFrame_t *ppframe)
+{
+  PmReturn_t retv = PM_RET_OK;
+  pPmObj_t r_pint;
+  retv = int_new(tres_pm_io.od_count, &r_pint);
+  NATIVE_SET_TOS(r_pint);
+  return retv;
+}
+
+/*----------------------------------------------------------------------------*/
+PmReturn_t
 tres_pm_get_input_list(pPmFrame_t *ppframe)
 {
   pPmObj_t pl;
@@ -213,7 +224,6 @@ tres_pm_get_input_list(pPmFrame_t *ppframe)
   for(idata = list_head(tres_pm_io.io_data_list);
 	  idata != NULL;
 	  idata = list_item_next(idata)) {
-
 	retv = int_new(idata->data, &pi);
     PM_RETURN_IF_ERROR(retv);
     retv = list_append(pl, pi);
