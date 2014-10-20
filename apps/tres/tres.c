@@ -76,12 +76,17 @@
 #endif
 
 
+#define ERR_NONE 0
+#define ERR_DATA_NONE_FREE -7
 /*----------------------------------------------------------------------------*/
 /*                              Global variables                              */
 /*----------------------------------------------------------------------------*/
 
 PROCESS(pf_process, "T-res processing function process");
 PROCESS(periodic_output, "T-res periodic output manager");
+
+static struct etimer et;
+MEMB(idata_mem, tres_idata_t, TRES_DATA_MAX_NUMBER);
 
 extern struct tres_pm_io_s tres_pm_io;
 
@@ -167,15 +172,6 @@ send_reliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
 
 #else /* !TRES_RELIABLE */
 
-/*----------------------------------------------------------------------------*/
-void new_input_data(tres_res_t *task, int16_t val){
-  if (task->period == 0){
-    process_post(&pf_process, new_input_event, task);
-  }
-  else{
-    task_idata_add(task, val);
-  }
-}
 
 /*----------------------------------------------------------------------------*/
 static void
@@ -211,6 +207,31 @@ tres_send_output(tres_res_t *task)
   PRINTFLN("--Done--");
 }
 
+/*----------------------------------------------------------------------------*/
+static int
+task_idata_add(tres_res_t *task, int16_t val)
+{
+  tres_idata_t *idata;
+
+  idata = memb_alloc(&idata_mem);
+  if(idata == NULL) {
+	PRINTF("no more space in the list\n");
+    return ERR_DATA_NONE_FREE;
+  }
+  idata->data=val;
+  list_add(task->idata_list, idata);
+  return ERR_NONE;
+}
+
+/*----------------------------------------------------------------------------*/
+void new_input_data(tres_res_t *task, int16_t val){
+  if (task->period == 0){
+    process_post(&pf_process, new_input_event, task);
+  }
+  else{
+    task_idata_add(task, val);
+  }
+}
 
 /*----------------------------------------------------------------------------*/
 static void
@@ -258,8 +279,6 @@ PROCESS_THREAD(pf_process, ev, data)
 }
 
 /*----------------------------------------------------------------------------*/
-static struct etimer et;
-MEMB(idata_mem, tres_idata_t, TRES_DATA_MAX_NUMBER);
 
 PROCESS_THREAD(periodic_output, ev, data)
 {
@@ -296,26 +315,6 @@ PROCESS_THREAD(periodic_output, ev, data)
     }
   } /* while (1) */
   PROCESS_END();
-}
-
-
-#define ERR_NONE 0
-#define ERR_DATA_NONE_FREE -7
-
-/*----------------------------------------------------------------------------*/
-int
-task_idata_add(tres_res_t *task, int16_t val)
-{
-  tres_idata_t *idata;
-
-  idata = memb_alloc(&idata_mem);
-  if(idata == NULL) {
-	PRINTF("no more space in the list\n");
-    return ERR_DATA_NONE_FREE;
-  }
-  idata->data=val;
-  list_add(task->idata_list, idata);
-  return ERR_NONE;
 }
 
 /*----------------------------------------------------------------------------*/
