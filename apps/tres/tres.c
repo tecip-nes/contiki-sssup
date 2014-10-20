@@ -287,7 +287,7 @@ PROCESS_THREAD(periodic_output, ev, data)
 #define ERR_DATA_NONE_FREE -7
 
 /*----------------------------------------------------------------------------*/
-static int
+int
 task_idata_add(tres_res_t *task, int16_t val)
 {
   tres_idata_t *idata;

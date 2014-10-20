@@ -154,6 +154,9 @@ void pf_handler(void *request, void *response, uint8_t *buffer,
 void lo_handler(void *request, void *response, uint8_t *buffer,
                 uint16_t preferred_size, int32_t *offset, tres_res_t *task);
 
+void in_handler(void *request, void *response, uint8_t *buffer,
+                uint16_t preferred_size, int32_t *offset, tres_res_t *task);
+
 static inline int16_t create_coap_base_url(char *url, int16_t max_len,
                                           uip_ipaddr_t *addr);
 
@@ -530,6 +533,11 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
                     preferred_size, buffer);
       BLOCK_SPRINTF(task->name, strpos, bufpos, offset, preferred_size, buffer);
       BLOCK_SPRINTF("/lo>;obs", strpos, bufpos, offset, preferred_size, buffer);
+      /* </tasks/[task_name]>/in> */
+      BLOCK_SPRINTF("</" TRES_BASE_PATH "/", strpos, bufpos, offset,
+                    preferred_size, buffer);
+      BLOCK_SPRINTF(task->name, strpos, bufpos, offset, preferred_size, buffer);
+      BLOCK_SPRINTF("/in>;ct=40,", strpos, bufpos, offset, preferred_size, buffer);
     } while(0);
     REST.set_response_payload(response, buffer, bufpos);
     REST.set_header_content_type(response, REST.type.APPLICATION_LINK_FORMAT);
@@ -600,6 +608,8 @@ subres_handler(void *request, void *response, uint8_t *buffer,
     pf_handler(request, response, buffer, preferred_size, offset, task);
   } else if(strcmp(subres, "lo") == 0) {
     lo_handler(request, response, buffer, preferred_size, offset, task);
+  } else if(strcmp(subres, "in") == 0) {
+    in_handler(request, response, buffer, preferred_size, offset, task);
   } else {
     REST.set_response_status(response, REST.status.NOT_FOUND);
   }
@@ -908,6 +918,33 @@ lo_handler(void *request, void *response, uint8_t *buffer,
 
   r->url = task->lo_url;
   coap_observe_handler(r, request, response);
+}
+
+/*----------------------------------------------------------------------------*/
+/*                             Input Resoruce                                 */
+/*----------------------------------------------------------------------------*/
+void
+in_handler(void *request, void *response, uint8_t *buffer,
+           uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+  rest_resource_flags_t method;
+  resource_t r[1];
+  const uint8_t *payload;
+  int len;
+  int16_t val;
+  method = REST.get_method_type(request);
+  if(method != METHOD_PUT) {
+    REST.set_response_status(response, REST.status.METHOD_NOT_ALLOWED);
+    return;
+  }
+  len = coap_get_payload(request, &payload);
+  if(len > 0){
+	val = (int16_t)strtol((const char *)payload, NULL, 10);
+	task_idata_add(task, val);
+	REST.set_response_status(response, REST.status.CHANGED);
+	return;
+  }
+  REST.set_response_status(response, REST.status.BAD_REQUEST);
 }
 
 /*----------------------------------------------------------------------------*/

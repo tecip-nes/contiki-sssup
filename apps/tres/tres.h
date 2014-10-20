@@ -165,6 +165,6 @@ void tres_init(void);
 uint8_t tres_start_monitoring(tres_res_t *task);
 uint8_t tres_stop_monitoring(tres_res_t *task);
 uint8_t tres_toggle_monitoring(tres_res_t *task);
-
+int task_idata_add(tres_res_t *task, int16_t val);
 /*----------------------------------------------------------------------------*/
 #endif /*  __TRES_H__  */
