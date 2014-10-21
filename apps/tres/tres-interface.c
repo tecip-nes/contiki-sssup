@@ -242,6 +242,21 @@ tres_add_task(const char *name, uint16_t period)
 }
 
 /*----------------------------------------------------------------------------*/
+static void
+task_od_delete_all(tres_res_t *task)
+{
+  tres_od_t *od;
+
+  tres_stop_monitoring(task);
+  od = list_pop(task->od_list);
+  while(od) {
+    memb_free(&od_mem, od);
+    od = list_pop(task->od_list);
+  }
+  task_reset_state(task);
+}
+
+/*----------------------------------------------------------------------------*/
 void
 tres_del_task(tres_res_t *task)
 {
@@ -264,6 +279,7 @@ tres_del_task(tres_res_t *task)
     }
   }
   task_is_delete_all(task);
+  task_od_delete_all(task);
   if(task->pf_img) {
     tres_mem_pf_clear(task->pf_img);
   }
@@ -308,22 +324,6 @@ task_od_add(tres_res_t *task, const char *str)
   list_add(task->od_list, od);
   return ERR_NONE;
 }
-
-/*----------------------------------------------------------------------------*/
-static void
-task_od_delete_all(tres_res_t *task)
-{
-  tres_od_t *od;
-
-  tres_stop_monitoring(task);
-  od = list_pop(task->od_list);
-  while(od) {
-    memb_free(&od_mem, od);
-    od = list_pop(task->od_list);
-  }
-  task_reset_state(task);
-}
-
 
 /*----------------------------------------------------------------------------*/
 static int
