@@ -102,16 +102,32 @@
 #define TRES_BASE_PATH "tasks"
 
 //! Maximimun number of tres tasks
+#ifndef TRES_CONF_TASK_MAX_NUMBER
 #define TRES_TASK_MAX_NUMBER 1
+#else
+#define TRES_TASK_MAX_NUMBER TRES_CONF_TASK_MAX_NUMBER
+#endif
 
 //! Maximimun number of is (shared among all tasks)
+#ifndef TRES_CONF_IS_MAX_NUMBER
 #define TRES_IS_MAX_NUMBER 3
+#else
+#define TRES_IS_MAX_NUMBER TRES_CONF_IS_MAX_NUMBER
+#endif
 
 //! Maximimun number of id (shared among all tasks)
+#ifndef TRES_CONF_OD_MAX_NUMBER
 #define TRES_OD_MAX_NUMBER 3
+#else
+#define TRES_OD_MAX_NUMBER TRES_CONF_OD_MAX_NUMBER
+#endif
 
 //! Maximimun number of data input (shared among all tasks)
+#ifndef TRES_CONF_DATA_MAX_NUMBER
 #define TRES_DATA_MAX_NUMBER 20
+#else
+#define TRES_DATA_MAX_NUMBER TRES_CONF_DATA_MAX_NUMBER
+#endif
 
 #define TRES_DEFAULT_EXECUTION_PERIOD 60
 
