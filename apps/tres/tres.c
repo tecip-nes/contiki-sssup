@@ -390,9 +390,10 @@ tres_start_monitoring(tres_res_t *task)
   tres_is_t *is;
 
   // check if input sources list is not empty
-  //if(list_length(task->is_list) == 0) {
-  // return -1;
-  //}
+  if(list_length(task->is_list) == 0) {
+    task->monitoring = 1;
+    return 1;
+  }
   // start monitoring input resources:
   // find first resource to observe and issue an observe request, that will 
   // cause a chain reaction causing all other sources to be observed as well, 
