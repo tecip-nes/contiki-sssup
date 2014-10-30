@@ -22,7 +22,7 @@
 
 // if enabled, T-Res always uses CON messages
 #ifndef TRES_CONF_RELIABLE
-#define TRES_CONF_RELIABLE 0
+#define TRES_CONF_RELIABLE 1
 #endif
 #if TRES_CONF_RELIABLE
 #define COAP_OBSERVING_CONF_REFRESH_INTERVAL 0
@@ -39,6 +39,9 @@
 #ifndef COAP_MAX_OPEN_TRANSACTIONS
 #define COAP_MAX_OPEN_TRANSACTIONS   4
 #endif
+
+#define TRES_CONF_OD_MAX_NUMBER 3
+
 
 /* Must be <= open transaction number. */
 #ifndef COAP_MAX_OBSERVERS
