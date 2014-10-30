@@ -216,7 +216,6 @@ tres_pm_get_input_list(pPmFrame_t *ppframe)
 {
   pPmObj_t pl;
   pPmObj_t pi = C_NULL;
-  int16_t i = 0;
   PmReturn_t retv = PM_RET_OK;
 
   retv = list_new(&pl);
