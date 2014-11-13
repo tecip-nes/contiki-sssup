@@ -50,7 +50,7 @@
 #define NULLRDC_CONF_802154_AUTOACK 0
 
 #undef CC2520_CONF_AUTOACK
-#define CC2520_CONF_AUTOACK 0
+#define CC2520_CONF_AUTOACK 1
 
 /* include support 6lowpan fragmentation */
 #define SICSLOWPAN_CONF_FRAG	1

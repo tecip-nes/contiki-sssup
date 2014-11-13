@@ -133,79 +133,6 @@ print_byte_array(uint8_t *bytes, uint16_t len)
 }
 */
 
-/*----------------------------------------------------------------------------*/
-#if TRES_RELIABLE
-static void
-client_chunk_handler(void *callback_data, void *response)
-{
-  const uint8_t *chunk;
-
-  coap_get_payload(response, &chunk);
-  //PRINTF("|%.*s\n", len, (char *)chunk);
-}
-/*----------------------------------------------------------------------------*/
-static void
-send_reliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
-{
-  coap_packet_t request[1];
-  coap_transaction_t *t;
-  uint8_t *token_ptr;
-  uint8_t token_len;
-
-  coap_init_message(request, COAP_TYPE_CON, COAP_PUT, coap_get_mid());
-  coap_set_header_uri_path(request, path);
-  coap_set_payload(request, payload, strlen((char *)payload));
-  token_len = coap_generate_token(&token_ptr);
-  coap_set_token(request, token_ptr, token_len);
-  t = coap_new_transaction(request->mid, addr, port);
-  if(t) {
-    t->callback = &client_chunk_handler;
-    t->packet_len = coap_serialize_message(request, t->packet);
-    PRINTF("send_reliable: sending reliably to");
-    PRINT6ADDR(&t->addr);
-    PRINTFLN();
-    coap_send_transaction(t);
-  } else {
-    PRINTFLN("send_reliable: could not allocate transaction");
-  }
-}
-
-#else /* !TRES_RELIABLE */
-
-
-/*----------------------------------------------------------------------------*/
-static void
-send_unreliable(uip_ipaddr_t *addr, uint16_t port, char *path, uint8_t *payload)
-{
-  coap_packet_t request[1];
-  size_t len;
-
-  coap_init_message(request, COAP_TYPE_NON, COAP_PUT, coap_get_mid());
-  coap_set_header_uri_path(request, path);
-  coap_set_payload(request, payload, strlen((char *)payload));
-  // no advantage in using transactions with NON messages, therefore we use
-  // coap_send_message
-  len = coap_serialize_message(request, uip_appdata);
-  PRINTF("Sending unreliably to ");
-  PRINT6ADDR(addr);
-  PRINTFLN();
-  coap_send_message(addr, port, uip_appdata, len);
-}
-#endif /* TRES_RELIABLE */
-
-/*----------------------------------------------------------------------------*/
-static void
-tres_send_output(tres_res_t *task)
-{
-  tres_od_t *od;
-  for(od = list_head(task->od_list); od != NULL; od = list_item_next(od)) {
-	PRINTFLN("--Requesting %s--", od->path);
-	PRINT6ADDR(od->addr);
-	tres_send(od->addr, TRES_REMOTE_PORT, od->path,
-	          task->last_output);
-  }
-  PRINTFLN("--Done--");
-}
 
 /*----------------------------------------------------------------------------*/
 static int
@@ -254,26 +181,85 @@ run_processing_func(tres_res_t *task)
   pm_run_from_img((uint8_t *)"pf", MEMSPACE_PROG, task->pf_img);
   //printf("F!\n");
   //PRINTF("Python finished, return of 0x%02x\n", retval);
-  // send output to destination
-  if(tres_pm_io.output_set) {
-	if(list_length(task->od_list) > 0) {
-	  PRINTF("od list len > 0, send output\n");
-      tres_send_output(task);
-    }
-    lo_event_handler(task);
-  }
 }
+#if TRES_RELIABLE
+/* This function is will be passed to COAP_BLOCKING_REQUEST() to handle responses. */
+static
+void
+client_chunk_handler(void *response)
+{
+  const uint8_t *chunk;
+
+  int len = coap_get_payload(response, &chunk);
+
+  printf("|%.*s", len, (char *)chunk);
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 PROCESS_THREAD(pf_process, ev, data)
 {
   PROCESS_BEGIN();
   PRINTF("PF process\n");
-
+  static tres_res_t *task;
+  static tres_od_t *od;
+  static coap_packet_t request[1];
+  static uint8_t *token_ptr;
+  static uint8_t token_len;
   new_input_event = process_alloc_event();
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == new_input_event);
-    run_processing_func((tres_res_t *)data);
+    PRINTF("EVENT %d\n", ev);
+    task = (tres_res_t *)data;
+    run_processing_func(task);
+    if(tres_pm_io.output_set) {
+      if(list_length(task->od_list) > 0) {
+        PRINTF("od list len > 0, send output\n");
+        for(od = list_head(task->od_list); od != NULL; od = list_item_next(od)) {
+          PRINTFLN("--Requesting %s--", od->path);
+          PRINT6ADDR(od->addr);
+
+#if TRES_RELIABLE
+          coap_init_message(request, COAP_TYPE_CON, COAP_PUT, coap_get_mid());
+          coap_set_payload(request, task->last_output,
+                           strlen((char *)task->last_output));
+          token_len = coap_generate_token(&token_ptr);
+          coap_set_token(request, token_ptr, token_len);
+          coap_set_header_uri_path(request, od->path);
+          PRINTF("RELIABLE SEND\n");
+          COAP_BLOCKING_REQUEST(od->addr, TRES_REMOTE_PORT, request,
+                                client_chunk_handler);
+#else
+          PRINTF("UNRELIABLE SEND\n");
+          coap_init_message(request, COAP_TYPE_NON, COAP_PUT, coap_get_mid());
+          coap_set_payload(request, task->last_output,
+                           strlen((char *)task->last_output));
+          token_len = coap_generate_token(&token_ptr);
+          coap_set_token(request, token_ptr, token_len);
+          coap_set_header_uri_path(request, od->path);
+          static coap_transaction_t *t;
+          if ((t = coap_new_transaction(request->mid, od->addr, TRES_REMOTE_PORT)))
+          {
+            t->packet_len = coap_serialize_message(request, t->packet);
+            coap_send_transaction(t);
+            PRINT6ADDR(od->addr);
+            PRINTFLN();
+            process_poll(&pf_process);
+            PRINTF("EVENT %d\n", ev);
+            PRINTF("YIELD\n");
+            //PROCESS_YIELD_UNTIL(ev == PROCESS_EVENT_POLL);
+            PROCESS_YIELD();
+            PRINTF("AFTER YIELD\n");
+            coap_clear_transaction(t);
+          } else {
+            PRINTF("Could not allocate transaction buffer");
+          }
+#endif
+        }
+        PRINTFLN("--Done--");
+      }
+      lo_event_handler(task);
+    }
   }
   PROCESS_END();
 }
@@ -390,9 +376,10 @@ tres_start_monitoring(tres_res_t *task)
   tres_is_t *is;
 
   // check if input sources list is not empty
-  //if(list_length(task->is_list) == 0) {
-  // return -1;
-  //}
+  if(list_length(task->is_list) == 0) {
+    task->monitoring = 1;
+    return 1;
+  }
   // start monitoring input resources:
   // find first resource to observe and issue an observe request, that will 
   // cause a chain reaction causing all other sources to be observed as well, 
