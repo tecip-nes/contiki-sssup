@@ -60,7 +60,7 @@
 /*                   T-Res default configuration values                       */
 /*----------------------------------------------------------------------------*/
 #ifndef TRES_CONF_PATH_MAX_LEN
-#define TRES_PATH_LEN_MAX 30
+#define TRES_PATH_LEN_MAX 25
 #else
 #define TRES_PATH_LEN_MAX TRES_CONF_PATH_MAX_LEN
 #endif
