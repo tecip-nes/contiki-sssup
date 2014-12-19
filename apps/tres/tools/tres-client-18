@@ -28,7 +28,7 @@ function run {
     done    
   fi
   echo "Start T-Res Task"
-  ${MYDIR}/bin/coap-client -m post $1
+  ${MYDIR}/bin/coap-client -m post $1?op=on
 }
 
 function print_help {

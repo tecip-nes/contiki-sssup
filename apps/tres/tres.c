@@ -209,7 +209,6 @@ PROCESS_THREAD(pf_process, ev, data)
   new_input_event = process_alloc_event();
   while(1) {
     PROCESS_WAIT_EVENT_UNTIL(ev == new_input_event);
-    PRINTF("EVENT %d\n", ev);
     task = (tres_res_t *)data;
     run_processing_func(task);
     if(tres_pm_io.output_set) {
@@ -272,7 +271,11 @@ PROCESS_THREAD(periodic_output, ev, data)
   
   etimer_set(&et, 1 * CLOCK_SECOND);
   int i;
-  tres_res_t *task;  
+  static tres_od_t *od;
+  static coap_packet_t request[1];
+  static uint8_t *token_ptr;
+  static uint8_t token_len;  
+  static tres_res_t *task;  
   while(1) {
     PROCESS_YIELD();
     if (etimer_expired(&et)) {
@@ -284,7 +287,55 @@ PROCESS_THREAD(periodic_output, ev, data)
             int len = list_length(task->idata_list);
         	PRINTF("timer expired for %s, %d elem \n", task->name, len);
         	run_processing_func((tres_res_t *)task);
-        	tres_idata_t *idata;
+
+            if(tres_pm_io.output_set) {
+              if(list_length(task->od_list) > 0) {
+                PRINTF("od list len > 0, send output\n");
+                for(od = list_head(task->od_list); od != NULL; od = list_item_next(od)) {
+                  PRINTFLN("--Requesting %s--", od->path);
+                  PRINT6ADDR(od->addr);
+#if TRES_RELIABLE
+                  coap_init_message(request, COAP_TYPE_CON, COAP_PUT, coap_get_mid());
+                  coap_set_payload(request, task->last_output,
+                                   strlen((char *)task->last_output));
+                  token_len = coap_generate_token(&token_ptr);
+                  coap_set_token(request, token_ptr, token_len);
+                  coap_set_header_uri_path(request, od->path);
+                  PRINTF("RELIABLE SEND\n");
+                  COAP_BLOCKING_REQUEST(od->addr, TRES_REMOTE_PORT, request,
+                                        client_chunk_handler);
+#else
+                  /*PRINTF("UNRELIABLE SEND\n");
+                  coap_init_message(request, COAP_TYPE_NON, COAP_PUT, coap_get_mid());
+                  coap_set_payload(request, task->last_output,
+                                   strlen((char *)task->last_output));
+                  token_len = coap_generate_token(&token_ptr);
+                  coap_set_token(request, token_ptr, token_len);
+                  coap_set_header_uri_path(request, od->path);
+                  static coap_transaction_t *t;
+                  if ((t = coap_new_transaction(request->mid, od->addr, TRES_REMOTE_PORT)))
+                  {
+                    t->packet_len = coap_serialize_message(request, t->packet);
+                    coap_send_transaction(t);
+                    PRINT6ADDR(od->addr);
+                    PRINTFLN();
+                    process_poll(&pf_process);
+                    PRINTF("EVENT %d\n", ev);
+                    PRINTF("YIELD\n");
+                    //PROCESS_YIELD_UNTIL(ev == PROCESS_EVENT_POLL);
+                    PROCESS_YIELD();
+                    PRINTF("AFTER YIELD\n");
+                    coap_clear_transaction(t);
+                  } else {
+                    PRINTF("Could not allocate transaction buffer");
+                  }*/
+#endif //TRES_RELIABLE
+                }
+                PRINTFLN("--Done--");
+              }
+              lo_event_handler(task);
+            }
+        	static tres_idata_t *idata;
         	idata = list_pop(task->idata_list);
         	while(idata) {
         	  memb_free(&idata_mem, idata);

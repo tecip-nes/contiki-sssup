@@ -37,7 +37,7 @@
 
 /* Multiplies with chunk size, be aware of memory constraints. */
 #ifndef COAP_MAX_OPEN_TRANSACTIONS
-#define COAP_MAX_OPEN_TRANSACTIONS   4
+#define COAP_MAX_OPEN_TRANSACTIONS   5
 #endif
 
 #define TRES_CONF_OD_MAX_NUMBER 3
