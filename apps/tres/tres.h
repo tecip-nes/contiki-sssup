@@ -121,6 +121,14 @@
 #define tres_send(...) send_unreliable(__VA_ARGS__)
 #endif
 
+#define REACTIVE_TRES 1
+
+#ifdef REACTIVE_TRES 
+#ifndef MAX_REACTIVE_REQUESTS
+#define MAX_REACTIVE_REQUESTS 3
+#endif
+#endif
+
 /*----------------------------------------------------------------------------*/
 typedef struct tres_is_s {
   struct tres_is_s *next;
@@ -149,7 +157,20 @@ typedef struct tres_tres_s {
   uint16_t obs_count;
   uint8_t state_len;
   uint8_t monitoring;
+
+#ifdef REACTIVE_TRES
+  /* Reactive behaviour */
+  uint8_t reactive_last_input[REST_MAX_CHUNK_SIZE]; /*! Last value received collecting all the sensors in a loop */
+  uint8_t reactive_last_result[REST_MAX_CHUNK_SIZE]; /*! The result of the pf on reactive_last_input  */
+  char *reactive_last_input_tag; /*! Tag */
+  
+  uint8_t is_reactive; /*! Says to pf process that the "call" is reactive */
+  uint8_t reactive_processing; /*! Is the task calculating a reactive value? */
+#endif
+
 } tres_res_t;
+
+process_event_t new_input_event;
 
 /*----------------------------------------------------------------------------*/
 void tres_init(void);

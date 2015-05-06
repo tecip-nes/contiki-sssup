@@ -51,4 +51,8 @@ void tres_interface_init(void);
  */
 void lo_event_handler(tres_res_t *task);
 
+int task_is_add(tres_res_t *task, const char *str);
+
+tres_res_t * tres_add_task(const char *name);
+
 #endif /* __TRES_INTERFACE_H__ */

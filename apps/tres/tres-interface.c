@@ -111,6 +111,42 @@
 MEMB(tasks_mem, tres_res_t, TRES_TASK_MAX_NUMBER);
 MEMB(is_mem, tres_is_t, TRES_IS_MAX_NUMBER);
 
+#ifdef REACTIVE_TRES
+
+#define PORT UIP_HTONS(COAP_DEFAULT_PORT)
+
+extern struct process pf_process;
+extern process_event_t new_input_event;
+
+/** Stores the values receive from input nodes un reactive behaviour */
+const uint8_t* reactive_received_input;
+int len;
+
+typedef struct metadata_queue_struct {
+  coap_separate_t data[MAX_REACTIVE_REQUESTS + 1 ];
+  int head;
+  int tail;
+  int size;
+} md_queue_t;
+
+/** Stores metadata used for separate response in reactive behaviour */
+static md_queue_t reactive_requests;
+
+#define IS_Q_FULL(q) ((q.tail + 1) % (q.size + 1)) == q.head
+#define IS_Q_EMPTY(q) (q.head == q.tail)
+
+#define Q_LENGTH(q)  ((q.tail - q.head >= 0) ? (q.tail - q.head) : (q.size + 1 + (q.tail - q.head)))
+#define Q_HEAD(q) (q.data[q.head])
+#define Q_TAIL(q) (q.data[q.tail])
+
+/* WARNING: is up to the user to check for empty or full queue before modifying */
+#define Q_POPV(q, h) { h = q.data[q.head];  q.head = (q.head + 1) % (q.size + 1); }
+#define Q_POP(q) { q.head = (q.head + 1) % (q.size + 1); }
+#define Q_PUSHV(q, v) { q.data[q.tail] = v; q.tail = (q.tail + 1) % (q.size + 1); }
+#define Q_PUSH(q) { q.tail = (q.tail + 1) % (q.size + 1); }
+
+#endif // REACTIVE_TRES
+
 /*----------------------------------------------------------------------------*/
 /*                            Forward Declarations                            */
 /*----------------------------------------------------------------------------*/
@@ -153,6 +189,15 @@ void pf_handler(void *request, void *response, uint8_t *buffer,
 
 void lo_handler(void *request, void *response, uint8_t *buffer,
                 uint16_t preferred_size, int32_t *offset, tres_res_t *task);
+
+#ifdef REACTIVE_TRES
+void no_handler (void* request, void* response, uint8_t* buffer,
+                 uint16_t preferred_size, int32_t* offset, tres_res_t* task);
+
+static inline void no_handler_get(void *request, void *response,
+                                  uint8_t *buffer, uint16_t preferred_size,
+                                  int32_t *offset, tres_res_t *task);
+#endif
 
 static inline int16_t create_coap_base_url(char *url, int16_t max_len,
                                           uip_ipaddr_t *addr);
@@ -268,7 +313,7 @@ tres_find_task(const char *name)
 
 
 /*----------------------------------------------------------------------------*/
-static int
+int
 task_is_add(tres_res_t *task, const char *str)
 {
   tres_is_t *is;
@@ -503,6 +548,13 @@ task_name_handler(void *request, void *response, uint8_t *buffer,
                     preferred_size, buffer);
       BLOCK_SPRINTF(task->name, strpos, bufpos, offset, preferred_size, buffer);
       BLOCK_SPRINTF("/pf>,", strpos, bufpos, offset, preferred_size, buffer);
+#ifdef REACTIVE_TRES      
+      /* </tasks/[task_name]>/no>, */
+      BLOCK_SPRINTF("</" TRES_BASE_PATH "/", strpos, bufpos, offset,
+                    preferred_size, buffer);
+      BLOCK_SPRINTF(task->name, strpos, bufpos, offset, preferred_size, buffer);
+      BLOCK_SPRINTF("/no>,", strpos, bufpos, offset, preferred_size, buffer);
+#endif // REACTIVE_TRES
       /* </tasks/[task_name]>/lo>;obs */
       BLOCK_SPRINTF("</" TRES_BASE_PATH "/", strpos, bufpos, offset,
                     preferred_size, buffer);
@@ -557,6 +609,10 @@ subres_handler(void *request, void *response, uint8_t *buffer,
     pf_handler(request, response, buffer, preferred_size, offset, task);
   } else if(strcmp(subres, "lo") == 0) {
     lo_handler(request, response, buffer, preferred_size, offset, task);
+#ifdef REACTIVE_TRES
+  } else if(strcmp(subres, "no") == 0) {
+    no_handler(request, response, buffer, preferred_size, offset, task);
+#endif // REACTIVE_TRES
   } else {
     REST.set_response_status(response, REST.status.NOT_FOUND);
   }
@@ -885,9 +941,200 @@ lo_event_handler(tres_res_t *task)
 }
 /*----------------------------------------------------------------------------*/
 
+
+/*----------------------------------------------------------------------------*/
+/*                             New Output Resource                            */
+/*----------------------------------------------------------------------------*/
+
+//RESOURCE(od, METHOD_GET | METHOD_POST | METHOD_PUT, "tasks/t1/od",
+//         "title=\"The output detinations for task 1\"; rt=\"Text\"");
+/* -------------------------------------------------------------------------- */
+
+#ifdef REACTIVE_TRES
+
+void no_handler (void* request, void* response, uint8_t* buffer,
+                 uint16_t preferred_size, int32_t* offset, tres_res_t* task)
+{
+    rest_resource_flags_t method;
+    method = REST.get_method_type(request);
+    if(method == METHOD_GET){
+        if(!task->monitoring){
+          no_handler_get(request, response, buffer, preferred_size, offset, task);
+        } else {
+          REST.set_response_status(response, REST.status.METHOD_NOT_ALLOWED);
+        }
+    }
+}
+
+/*----------------------------------------------------------------------------*/
+
+/*! \brief Handles the responses from the input sensors reactively interrogated
+*
+*  This function is called when a value from a sensor requested by the
+*  input_getter process arrives. Stores the result in the global variable
+*  reactive_received_input.
+*
+*/
+static void
+is_reactive_get_handler(void* response){
+  coap_packet_t* r = (coap_packet_t*) response;
+  if(r->type == COAP_TYPE_ACK && r->payload_len == 0){
+    PRINTF("RECEIVED SEPARATE ACK\n");
+  }
+  reactive_received_input = NULL;
+  len = coap_get_payload(response, &reactive_received_input);
+}
+
+/*----------------------------------------------------------------------------*/
+
+PROCESS(input_getter, "Retrieves sensor values from /is list");
+
+/*!
+*  \brief The process that interrogates all input sensors to support
+*         the reactive behaviour
+*
+*
+*  The process that reactively retrieves the values of all the input
+*  sensors. The list of /is is scanned, for each input a request is sent
+*  and for each response the pf process is executed on it.
+*  When the loop terminates the value of the last execution of the pf 
+*  is sent back to the requester.
+*
+*
+*  @param data The data passed is the tres_res_t task structure
+*/
+PROCESS_THREAD(input_getter, ev, data)
+{
+  PROCESS_BEGIN();
+  PRINTF("Reactive input getter process starts\n");
+
+  static tres_is_t *is;
+  static tres_res_t* task;
+  static coap_packet_t is_sensor_request[1];
+  static uint8_t i = 0;
+  static uint8_t value_received = 0;
+
+  task = (tres_res_t*) data;
+  
+  // For each resource in the /is list
+  for(is = list_head(task->is_list); is != NULL; is = list_item_next(is)) {
+    i++;
+    PRINTF("Source %d: Sending GET request on ", i);
+    PRINT6ADDR(is->addr);
+    PRINTF("/%s\n", is->path);
+
+    // Perform the GET request on the current is
+    coap_init_message(is_sensor_request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(is_sensor_request, is->path);  
+    COAP_BLOCKING_REQUEST(is->addr, PORT, is_sensor_request, is_reactive_get_handler); 
+
+    if(len == 0 || reactive_received_input == NULL){
+      PRINTF("Source %d: No value received. Continue.\n", i);
+    } else {
+      PRINTF("Source %d: Received %s\n", i, (char*) reactive_received_input);
+      value_received = 1;
+
+      // Receive the result, save it within the task
+      memcpy(task->reactive_last_input, reactive_received_input, len);
+      task->reactive_last_input_tag = is->tag;
+      task->is_reactive = 1;
+
+      // Signal the processing function process to compute a new value
+      // result will be stored in task->last_output
+      process_post_synch(&pf_process, new_input_event, task);
+      PRINTF("PF computed output: %s\n", (char*) task->reactive_last_result);
+    }
+  }  
+
+  static coap_separate_t* cur_meta = NULL;
+
+  // for each request received, resume the transaction
+  while(!IS_Q_EMPTY(reactive_requests)){
+
+    cur_meta = &(Q_HEAD(reactive_requests));
+    
+    coap_transaction_t *transaction = NULL;
+    if (transaction = coap_new_transaction(cur_meta->mid, &(cur_meta->addr), cur_meta->port)) {
+      
+      coap_packet_t response[1];
+      
+      coap_separate_resume(response, cur_meta, REST.status.OK);
+      
+      if(value_received){
+        len = strlen((char *)task->reactive_last_result);
+        coap_set_payload(response, task->reactive_last_result, len);
+        PRINTF("Send new computed value: %s\n", (char*) task->reactive_last_result);
+      } else {
+        REST.set_response_status(response, REST.status.SERVICE_UNAVAILABLE);
+        PRINTF("No sensor responded. Send 5.03\n");
+      }
+
+      transaction->packet_len = coap_serialize_message(response, transaction->packet);
+      coap_send_transaction(transaction);
+    }
+
+    Q_POP(reactive_requests);
+  }
+
+  task->reactive_processing = 0;
+  
+  i = 0;
+  PRINTF("Input getter process exists.\n");
+  PROCESS_END();
+}
+
+/*!
+*   \brief Handler function for GET /tasks/<task>/no subresource
+*   
+*   Triggers reactive behaviour of a TRes node. 
+*   COAP separate answer mechanism is used: the handler responds
+*   immediatly with an ACK message then starts the process collecting
+*   the values and sending back the computed result to the requester.
+*
+*/
+static void
+no_handler_get(void *request, void *response, uint8_t *buffer,
+               uint16_t preferred_size, int32_t *offset, tres_res_t *task)
+{
+
+  PRINTF("no_handler_get() starts\n");
+
+  if(IS_Q_FULL(reactive_requests)){
+
+    PRINTF("Q: Too many concurrent requests\n");
+    REST.set_response_status(response, REST.status.SERVICE_UNAVAILABLE);
+
+  } else {
+    /* Notify the requester that an answer will be computed and sent back */
+    coap_separate_accept(request, &(Q_TAIL(reactive_requests)));
+
+    PRINTF("Q: Pushing in the queue\n");
+    Q_PUSH(reactive_requests);
+  }
+
+  if(!task->reactive_processing){
+    task->reactive_processing = 1;
+    
+    /* Start a process that will gather results and send a response
+       to the requester via a separate request */
+    process_start(&input_getter, task);
+  }
+
+  PRINTF("no_handler_get() ends\n");
+}
+#endif
+
+/*----------------------------------------------------------------------------*/
+
 void
 tres_interface_init(void)
 {
+
+#ifdef REACTIVE_TRES
+  reactive_requests.head = 0;
+  reactive_requests.tail = 0;
+  reactive_requests.size = MAX_REACTIVE_REQUESTS;
+#endif // REACTIVE_TRES
   rest_activate_resource(&resource_tasks);
 }
 
