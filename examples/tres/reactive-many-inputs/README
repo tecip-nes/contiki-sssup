@@ -1,0 +1,29 @@
+= Reactive TRes with many inputs example
+
+This folder contains an example showing the reactive behaviour of reactive (GET based) TRes
+when the task has more than one input source.
+
+This is interesting because shows the loop of requesting the input values
+and the results of each processing function computation.
+This info is printed through the serial monitor of the mote (be sure
+to set DEBUG macro to 1 in /apps/tres/tres-interface.c).
+
+The simulation runs 3 simple TRes nodes and automatically sets up the Halve task
+(https://github.com/tecip-nes/contiki-tres/wiki/The-Halve-Task-Example).
+
+== Prerequisites
+
+To use the client-test.sh script you will need libcoap client supporting COAP13.
+
+== How to run it:
+
+Launch the simulation in Cooja (the Halve task will be automatically set up)
+    $ make TARGET=cooja tres-test-src.csc >/dev/null
+
+Open a different terminal and tunslip6
+    $ make connect-router-cooja
+
+Open a third terminal to simulate the client:
+    $ ./client-test.sh get 
+
+You can also use Copper to test out the /no subresource and its behaviour.

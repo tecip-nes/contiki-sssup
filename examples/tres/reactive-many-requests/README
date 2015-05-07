@@ -1,0 +1,34 @@
+= Reactive TRes with many concurrent requests example
+
+This folder contains an example showing the reactive behaviour of reactive (GET based) TRes
+when dealing with many concurrent requests.
+
+The computation of a reactive result implies retrieving the sensor value from
+all the input sources and over each of them calculating the processing function.
+This can take a while, therefore consecutive requests arriving while the
+value is being computed are queued and the result is responded for them all.
+When the queue is full (see the MAX_REACTIVE_REQUESTS macro) "Service unavailable"
+(5.03) is responded instead.
+
+The simulation runs 4 simple TRes nodes and automatically sets up the Halve task
+(https://github.com/tecip-nes/contiki-tres/wiki/The-Halve-Task-Example).
+The client issues many requests in parallel and shows thei results as soon as they
+arrive. Notice that the 5.03 responses will be the first to arrive, while the 
+actual results will arrive later.
+
+== Prerequisites
+
+To use the client-test.sh script you will need libcoap client supporting COAP13.
+
+== How to run it:
+
+Launch the simulation in Cooja (the Halve task will be automatically set up)
+    $ make TARGET=cooja tres-test-src.csc >/dev/null
+
+Open a different terminal and tunslip6
+    $ make connect-router-cooja
+
+Open a third terminal to simulate the client and issue the parallel requests:
+    $ ./client-test.sh get
+
+You can also use Copper to test out the /no subresource and its behaviour.

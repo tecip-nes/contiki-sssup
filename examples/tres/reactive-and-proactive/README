@@ -1,0 +1,28 @@
+= Reactive and proactive TRes example
+
+This folder contains an example showing the reactive behaviour of reactive (GET based) TRes
+and its interaction with the regular (OBSERVE based) behaviour.
+
+The simulation runs 3 simple TRes nodes and automatically sets up the Halve task
+(https://github.com/tecip-nes/contiki-tres/wiki/The-Halve-Task-Example).
+
+== Prerequisites
+
+To use the client-test.sh script you will need libcoap client supporting COAP13.
+
+== How to run it:
+
+Launch the simulation in Cooja (the Halve task will be automatically set up)
+    $ make TARGET=cooja tres-test-src.csc >/dev/null
+
+Open a different terminal and tunslip6
+    $ make connect-router-cooja
+
+Open a third terminal to simulate the client:
+    $ ./client-test.sh get 
+
+Now activate the task and notice that the GET on /no has become METHOD_NOT_ALLOWED:
+    $ ./client-test.sh toggle
+    $ ./client-test.sh get
+
+You can also use Copper to test out the /no subresource and its behaviour.
